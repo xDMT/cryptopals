@@ -2,13 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_STR_LEN 5000
+#define MAX_STR_LEN 50000
 #define INIT_B64 1
 #define DECODE_B64 0
 
 
 void initB64DecodeMap(unsigned char b64[]);
-void b64decrypt(unsigned char b64[], unsigned char instr[], unsigned char b64decryptStr[]);
+void b64decrypt(unsigned char b64[], unsigned char instr[], u_int64_t b64decryptStr[]);
 unsigned char getB64Val(unsigned char c, unsigned char b64[]);
 void loadFile(unsigned char instr[], unsigned char *filename);
 
@@ -19,13 +19,13 @@ void loadFile(unsigned char instr[], unsigned char *filename);
 
 int main(int argc, char * argv[])
 {
-	unsigned char b64[64], instr[MAX_STR_LEN], b64decryptStr[MAX_STR_LEN], *filename;
-	int i, x, z;
+	unsigned char b64[64], instr[MAX_STR_LEN] , filename[MAX_STR_LEN];
+	int i, x, z, nll = 0;
 	strcpy(filename, argv[1]);
-
+	u_int64_t b64decryptStr[MAX_STR_LEN];
 
 	// Loads the decoding index for base64 to hex
-	initB64DecodeMap(b64, instr);
+	initB64DecodeMap(b64);
 
 	// Loads the contents of the file to be decrypted into instr
 	loadFile(instr, filename);
@@ -34,9 +34,32 @@ int main(int argc, char * argv[])
 	b64decrypt(b64, instr, b64decryptStr);	
 
 
+	size_t len  = (sizeof(b64decryptStr)/sizeof(u_int64_t));
+
+
+	for (i = 0; i < len; ++i)
+	{
+		printf("%x ", b64decryptStr[i]);
+//#ifdef DEBUG
+		if (i % 20 == 0)
+		{
+			printf("\n");
+		}
 	
-
-
+//#endif
+		if (b64decryptStr[i] != 0)
+		{
+			nll = 0;
+		}
+		if (b64decryptStr[i] == 0)
+		{
+			nll++;
+			if (nll > 20)
+			{
+				break	;
+			}
+		}
+	}
 	
 
 
@@ -46,7 +69,7 @@ int main(int argc, char * argv[])
 
 
 
-void b64decrypt(unsigned char b64[], unsigned char instr[], unsigned char b64decryptStr[])
+void b64decrypt(unsigned char b64[], unsigned char instr[], u_int64_t b64decryptStr[])
 {
 
 	int i, x, z, f;
@@ -74,33 +97,61 @@ void b64decrypt(unsigned char b64[], unsigned char instr[], unsigned char b64dec
 	// of the decrypted base 64 message
 	for (i = 0, f = 0; i < len; )
 	{
+		b64Read = 0;
 		for(z = 0; z < 8; ++z, ++i)
 		{
 			tempbyte[z] = instr[i];
 		}
-		for (z = 0, x = 6; z < 8; ++z, (x *= 2))
+		for (z = 0, x = 6; z < 8; ++z)
 		{
 			out = getB64Val(tempbyte[z], b64);
-			b64Read += (out << (54-x));
+			b64Read += out;
+			if (z < 7)
+			{
+				b64Read = b64Read << x;
+			}
 		}
 		
 			hexOut = (b64Read & 0b0000000000000000111111110000000000000000000000000000000000000000);
+			hexOut = hexOut >> 40;
 			b64decryptStr[f++] = hexOut;
-	
+		
+#ifdef DEBUG
+			printf("Storing number %d - Hex value: %x\n", hexOut, hexOut);
+#endif
 			hexOut = (b64Read & 0b0000000000000000000000001111111100000000000000000000000000000000);
+			hexOut = hexOut >> 32;
 			b64decryptStr[f++] = hexOut;
+#ifdef DEBUG
+			printf("Storing number %d - Hex value: %x\n", hexOut, hexOut);
+#endif
 
 			hexOut = (b64Read & 0b0000000000000000000000000000000011111111000000000000000000000000);
+			hexOut = hexOut >> 24;
 			b64decryptStr[f++] = hexOut;
+#ifdef DEBUG
+			printf("Storing number %d - Hex value: %x\n", hexOut, hexOut);
+#endif
 
 			hexOut = (b64Read & 0b0000000000000000000000000000000000000000111111110000000000000000);
+			hexOut = hexOut >> 16;
 			b64decryptStr[f++] = hexOut;
+#ifdef DEBUG
+			printf("Storing number %d - Hex value: %x\n", hexOut, hexOut);
+#endif
 
 			hexOut = (b64Read & 0b0000000000000000000000000000000000000000000000001111111100000000);
+			hexOut = hexOut >> 8;
 			b64decryptStr[f++] = hexOut;
+#ifdef DEBUG
+			printf("Storing number %d - Hex value: %x\n", hexOut, hexOut);
+#endif
 
 			hexOut = (b64Read & 0b0000000000000000000000000000000000000000000000000000000011111111);
 			b64decryptStr[f++] = hexOut;
+#ifdef DEBUG
+			printf("Storing number %d - Hex value: %x\n", hexOut, hexOut);
+#endif
 
 	}
 
@@ -141,14 +192,15 @@ unsigned char getB64Val(unsigned char c, unsigned char b64[])
 	// This function increments i untill it finds the matching b64 character
 	// and returns the value of i
 	unsigned char i = 0;
-	for (; ; ++i)
+	for (; i < 63 ; ++i)
 	{
+		
 		if (b64[i] == c)
 		{
 			return i;
 		}
 	}
-	exit(1);
+	return;
 }
 
 
@@ -168,13 +220,14 @@ void loadFile(unsigned char instr[], unsigned char *filename)
 	int i = 0;
 
 	fp = fopen(filename, "r");
-	while (c = fgetc(fp))
+	do 
 	{
+		c = fgetc(fp);
 		if (c != '\n')
 		{
 			instr[i++] = c;
 		}
-	}
+	} while ((c != EOF) && (i < MAX_STR_LEN));
 	return;
 
 
