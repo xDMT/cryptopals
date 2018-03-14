@@ -40,9 +40,9 @@ int main(int argc, char * argv[])
 
 	for (x = 0; x < i;)
 	{
-		for (z = 0; z < 30; ++z, ++x)
+		for (z = 0; z < 45; ++z, ++x)
 		{
-			printf("%x ", b64decryptStr[x]);
+			printf("%02x ", b64decryptStr[x]);
 		}
 		printf("\n");
 	}
@@ -82,9 +82,12 @@ int main(int argc, char * argv[])
 	for (i = 0, f = 0; i < len; )
 	{
 		b64Read = 0;
-		for(z = 0; z < 8; ++z, ++i)
+		for(z = 0; z < 8; ++i)
 		{
-			tempbyte[z] = instr[i];
+			if (instr[i] != '\n')
+			{
+				tempbyte[z++] = instr[i];
+			}
 		}
 		for (z = 0, x = 6; z < 8; ++z)
 		{
