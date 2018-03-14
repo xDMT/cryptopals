@@ -5,7 +5,7 @@
 #define MAX_STR_LEN 50000
 #define INIT_B64 1
 #define DECODE_B64 0
-#define PRINT_HEX_DECRYPT
+#define PRINT_MSG
 
 
 
@@ -314,9 +314,9 @@ int guessKeysize(u_int64_t *str)
 
 void findKey(u_int64_t *str, int keySize, int len)
 {
-	unsigned char blockCipher[len];
-	int i,x,z, f;
-	i = x = z = 0;
+	unsigned char blockCipher[len], key = 0x1, outchar, messageTemp[len], message[len];
+	int i,x,z, f, score = 0, lowestScore = 0x80000000;
+	i = x = z = f = 0;
 
 	for (i = 0; i < len; ++z)
 	{
@@ -326,6 +326,44 @@ void findKey(u_int64_t *str, int keySize, int len)
 		}
 	}
 
+	
+
+	// Make single xor decrypt function here
+	for (f = 0; f < 5; ++f)
+	{
+		for (key = 0x1; key < 0xFF; key++)
+		{	
+			for(i = ((len/5)*f); i < ((len/5)*(f+1)); ++i)
+			{
+				outchar = key ^ blockCipher[i];
+				( (outchar > 0x41) && (outchar < 0x7A) ) ? score++ : score--;
+				messageTemp[i] = outchar;
+			}
+			if (score > lowestScore)
+			{
+				lowestScore = score;
+				for (i = ((len/5)*f); i < ((len/5)*(f+1)); ++i)
+				{
+					message[i] = messageTemp[i];
+				}
+			}
+			score = 0;
+		}
+	}
+#ifdef PRINT_MSG
+	for (i = 0; i < len; ++i)
+	{
+		for (z = 0; z < 45; ++z)
+		{
+			printf("%c", message[i]);
+		}
+		printf("\n");
+	}
+#endif
+
+
+
+
 #ifdef PRINT_HEX_DECRYPT
 	for (x = 0; x < len;)
 	{
@@ -333,7 +371,7 @@ void findKey(u_int64_t *str, int keySize, int len)
 			{
 				if (x % (len/5) == 0)
 				{
-					printf("\n\n\n\n");
+					printf("\n\n\n\n\nBlock %d\n", ((f++) +1));
 				}
 				printf("%02x ", blockCipher[x]);
 			}
