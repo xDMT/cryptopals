@@ -8,9 +8,9 @@
 
 
 void initB64DecodeMap(unsigned char b64[]);
-void b64decrypt(unsigned char b64[], unsigned char instr[], u_int64_t b64decryptStr[]);
+unsigned char * b64decrypt(unsigned char b64[], unsigned char * instr , u_int64_t b64decryptStr[]);
 unsigned char getB64Val(unsigned char c, unsigned char b64[]);
-void loadFile(unsigned char * instr, unsigned char *filename);
+unsigned char * loadFile(unsigned char * instr, unsigned char *filename);
 
 
 
@@ -32,22 +32,18 @@ int main(int argc, char * argv[])
 	initB64DecodeMap(b64);
 
 	// Loads the contents of the file to be decrypted into instr
-	loadFile(instr, filename);
+	instr = loadFile(instr, filename);
 
 	// Decrypts the file
-	b64decrypt(b64, instr, b64decryptStr);	
+	instr = b64decrypt(b64, instr, b64decryptStr);	
 
-
-	// Write a function to print b64decrypt	
-
-	free(instr);
 
 	return 0;
 }
 
 
 
-void b64decrypt(unsigned char b64[], unsigned char instr[], u_int64_t b64decryptStr[])
+unsigned char * b64decrypt(unsigned char b64[], unsigned char *instr, u_int64_t b64decryptStr[])
 {
 
 	int i, x, z, f;
@@ -132,7 +128,7 @@ void b64decrypt(unsigned char b64[], unsigned char instr[], u_int64_t b64decrypt
 #endif
 
 	}
-
+	return instr;
 }
 
 void initB64DecodeMap(unsigned char b64[])
@@ -191,31 +187,27 @@ unsigned char getB64Val(unsigned char c, unsigned char b64[])
 
 
 
-void loadFile(unsigned char * instr, unsigned char *filename)
+unsigned char * loadFile(unsigned char * instr, unsigned char *filename)
 {
 	FILE *fp;
 	long len;
 	size_t result;
 
 	fp = fopen(filename, "r");
-	len = fseek(fp, 0, SEEK_END);
+	fseek(fp, 0, SEEK_END);
+	len = ftell(fp);
 	rewind(fp);
 
-	result = realloc(instr, sizeof(char)*len);
-	fread(instr, sizeof(char), len, fp);
+	instr = realloc(instr, sizeof(char)*len);
+	result = fread(instr, sizeof(char), len, fp);
 
-	if (result != len)
-	{
-		fputs("Reading Errow", stderr);
-		exit(3);
-	}
 	
 	fclose(fp);
 
 
 
 
-	return;
+	return instr;
 
 
 }
