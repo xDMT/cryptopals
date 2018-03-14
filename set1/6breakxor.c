@@ -6,14 +6,12 @@
 #define INIT_B64 1
 #define DECODE_B64 0
 
-
 void initB64DecodeMap(unsigned char b64[]);
 int  b64decrypt(unsigned char b64[], unsigned char * instr , u_int64_t b64decryptStr[]);
 unsigned char getB64Val(unsigned char c, unsigned char b64[]);
 unsigned char * loadFile(unsigned char * instr, unsigned char *filename);
 
-
-
+int hammingDistance(unsigned char *val1, unsigned char *val2);
 
 
 
@@ -22,22 +20,26 @@ int main(int argc, char * argv[])
 	unsigned char b64[64], filename[MAX_STR_LEN];
 	unsigned char * instr = malloc(sizeof(char)*10000);
 	u_int64_t * b64decryptStr = malloc(sizeof(u_int64_t)*10000);	
-	int i, x, z, nll = 0;
+	int i, hd, x, z, nll = 0;
 
 
+	if (argv[1] == NULL)
+	{
+		printf("\nInvalid argument\n");
+		exit(0);
+	}
 
 	strcpy(filename, argv[1]);
-
-	// Loads the decoding index for base64 to hex
 	initB64DecodeMap(b64);
-
-	// Loads the contents of the file to be decrypted into instr
 	instr = loadFile(instr, filename);
-
-	// Decrypts the file
 	i = b64decrypt(b64, instr, b64decryptStr);	
 
+	hd = hammingDistance("this is a test", "wokka wokka!!!");
+	printf("\n%d", hd);
+	
 
+
+#ifdef PRINT_HEX
 	for (x = 0; x < i;)
 	{
 		for (z = 0; z < 45; ++z, ++x)
@@ -46,7 +48,9 @@ int main(int argc, char * argv[])
 		}
 		printf("\n");
 	}
-
+#endif
+	free(instr);
+	free(b64decryptStr);
 
 	return 0;
 }
@@ -207,13 +211,17 @@ unsigned char * loadFile(unsigned char * instr, unsigned char *filename)
 	size_t result;
 
 	fp = fopen(filename, "r");
+	fp == NULL ? exit(1) : fp;
 	fseek(fp, 0, SEEK_END);
 	len = ftell(fp);
 	rewind(fp);
 
 	result = fread(instr, sizeof(char), len, fp);
-
-	
+	if (result != len)
+	{
+		printf("\nRead Error\n");
+		exit(0);
+	}
 	fclose(fp);
 
 
@@ -223,3 +231,33 @@ unsigned char * loadFile(unsigned char * instr, unsigned char *filename)
 
 
 }
+
+
+int hammingDistance(unsigned char *val1, unsigned char *val2)
+{
+	int len, i,x, hammingD = 0;
+	len = strlen(val1);
+	(strlen(val2) > len) ? (len = strlen(val2)) : len;
+	unsigned char *result = malloc(sizeof(unsigned char)*len);
+	unsigned char m2;
+
+	for (i = 0; i < len; ++i)
+	{
+		result[i] = val1[i] ^ val2[i];
+	}
+	for (i = 0 ; i < (len); ++i)
+	{
+		for (x = 0; x < 8; ++x)
+		{
+			m2 = result[i] & 0x1;
+			( m2 == 0x1 ) ? hammingD++ : (m2 = 0x0);
+			result[i] = result[i] >> 1;
+		}
+	}
+	free(result);
+	return hammingD;
+}	
+
+
+
+
