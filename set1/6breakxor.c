@@ -8,7 +8,7 @@
 
 
 void initB64DecodeMap(unsigned char b64[]);
-unsigned char * b64decrypt(unsigned char b64[], unsigned char * instr , u_int64_t b64decryptStr[]);
+int  b64decrypt(unsigned char b64[], unsigned char * instr , u_int64_t b64decryptStr[]);
 unsigned char getB64Val(unsigned char c, unsigned char b64[]);
 unsigned char * loadFile(unsigned char * instr, unsigned char *filename);
 
@@ -20,8 +20,8 @@ unsigned char * loadFile(unsigned char * instr, unsigned char *filename);
 int main(int argc, char * argv[])
 {
 	unsigned char b64[64], filename[MAX_STR_LEN];
-	unsigned char * instr = malloc(sizeof(char)*1);
-	u_int64_t * b64decryptStr = malloc(sizeof(u_int64_t)*1);	
+	unsigned char * instr = malloc(sizeof(char)*10000);
+	u_int64_t * b64decryptStr = malloc(sizeof(u_int64_t)*10000);	
 	int i, x, z, nll = 0;
 
 
@@ -35,7 +35,17 @@ int main(int argc, char * argv[])
 	instr = loadFile(instr, filename);
 
 	// Decrypts the file
-	instr = b64decrypt(b64, instr, b64decryptStr);	
+	i = b64decrypt(b64, instr, b64decryptStr);	
+
+
+	for (x = 0; x < i;)
+	{
+		for (z = 0; z < 30; ++z, ++x)
+		{
+			printf("%x ", b64decryptStr[x]);
+		}
+		printf("\n");
+	}
 
 
 	return 0;
@@ -43,7 +53,7 @@ int main(int argc, char * argv[])
 
 
 
-unsigned char * b64decrypt(unsigned char b64[], unsigned char *instr, u_int64_t b64decryptStr[])
+ int b64decrypt(unsigned char b64[], unsigned char *instr, u_int64_t b64decryptStr[])
 {
 
 	int i, x, z, f;
@@ -128,7 +138,7 @@ unsigned char * b64decrypt(unsigned char b64[], unsigned char *instr, u_int64_t 
 #endif
 
 	}
-	return instr;
+	return f;
 }
 
 void initB64DecodeMap(unsigned char b64[])
@@ -198,7 +208,6 @@ unsigned char * loadFile(unsigned char * instr, unsigned char *filename)
 	len = ftell(fp);
 	rewind(fp);
 
-	instr = realloc(instr, sizeof(char)*len);
 	result = fread(instr, sizeof(char), len, fp);
 
 	
