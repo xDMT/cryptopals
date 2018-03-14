@@ -5,6 +5,9 @@
 #define MAX_STR_LEN 50000
 #define INIT_B64 1
 #define DECODE_B64 0
+#define PRINT_HEX_DECRYPT
+
+
 
 void initB64DecodeMap(unsigned char b64[]);
 int  b64decrypt(unsigned char b64[], unsigned char * instr , u_int64_t b64decryptStr[]);
@@ -12,15 +15,15 @@ unsigned char getB64Val(unsigned char c, unsigned char b64[]);
 unsigned char * loadFile(unsigned char * instr, unsigned char *filename);
 
 int hammingDistance(unsigned char *val1, unsigned char *val2);
-
-
+int guessKeysize(u_int64_t *str);
+void findKey(u_int64_t *str, int keySize, int len);
 
 int main(int argc, char * argv[])
 {
 	unsigned char b64[64], filename[MAX_STR_LEN];
 	unsigned char * instr = malloc(sizeof(char)*10000);
 	u_int64_t * b64decryptStr = malloc(sizeof(u_int64_t)*10000);	
-	int i, hd, x, z, nll = 0;
+	int len, hd, x, z, nll = 0;
 
 
 	if (argv[1] == NULL)
@@ -32,15 +35,14 @@ int main(int argc, char * argv[])
 	strcpy(filename, argv[1]);
 	initB64DecodeMap(b64);
 	instr = loadFile(instr, filename);
-	i = b64decrypt(b64, instr, b64decryptStr);	
+	len = b64decrypt(b64, instr, b64decryptStr);	
 
-	hd = hammingDistance("this is a test", "wokka wokka!!!");
-	printf("\n%d", hd);
+	hd = guessKeysize(b64decryptStr);
 	
-
+	findKey(b64decryptStr, hd, len);
 
 #ifdef PRINT_HEX
-	for (x = 0; x < i;)
+	for (x = 0; x < len;)
 	{
 		for (z = 0; z < 45; ++z, ++x)
 		{
@@ -54,6 +56,16 @@ int main(int argc, char * argv[])
 
 	return 0;
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -194,16 +206,6 @@ unsigned char getB64Val(unsigned char c, unsigned char b64[])
 	return;
 }
 
-
-
-
-
-
-
-
-
-
-
 unsigned char * loadFile(unsigned char * instr, unsigned char *filename)
 {
 	FILE *fp;
@@ -232,7 +234,6 @@ unsigned char * loadFile(unsigned char * instr, unsigned char *filename)
 
 }
 
-
 int hammingDistance(unsigned char *val1, unsigned char *val2)
 {
 	int len, i,x, hammingD = 0;
@@ -241,10 +242,17 @@ int hammingDistance(unsigned char *val1, unsigned char *val2)
 	unsigned char *result = malloc(sizeof(unsigned char)*len);
 	unsigned char m2;
 
+
+	// Xors each character of two strings and stores the result in result
 	for (i = 0; i < len; ++i)
 	{
 		result[i] = val1[i] ^ val2[i];
 	}
+
+	// Iterates through result determining the differing bits 
+	// by anding each character of result with 1, 
+	// and adding a count when the result of the AND is 1
+	// indicating a differing bit
 	for (i = 0 ; i < (len); ++i)
 	{
 		for (x = 0; x < 8; ++x)
@@ -257,6 +265,87 @@ int hammingDistance(unsigned char *val1, unsigned char *val2)
 	free(result);
 	return hammingD;
 }	
+
+int guessKeysize(u_int64_t *str)
+{
+	int guess, lowGuess, hd, i;
+	int lowest = 0x7FFFFFFF;
+	unsigned char *val1, *val2;
+
+	val1 = malloc(sizeof(unsigned char)*1);
+	val2 = malloc(sizeof(unsigned char)*1);
+
+
+	// Tries a series of key size guesses
+	for (guess = 2; guess < 40; ++guess)
+	{
+		val1 = realloc(val1,sizeof(unsigned char)*guess);
+		val2 = realloc(val2,sizeof(unsigned char)*guess);
+
+		// Copys two strings that are guess characters away from
+		// eachother and sends them to the hammingDistance function
+		
+		for (i = 0; i < guess; ++i)
+		{
+			val1[i] = str[i];
+		       	val2[i] = str[i+guess];
+		}		
+		hd = hammingDistance(val1,val2);
+
+
+
+		// The lowest hamming distance will be recorded
+		// and the keysize that produced the lowest hammingDistance
+		// is also recorded
+		if (hd < lowest)
+		{
+			lowest = hd;
+			lowGuess = guess;
+		}
+	}
+	free(val1);
+	free(val2);
+
+	// The keysize that produced the lowest hamming distance is returned for a following function
+	// to single Xor decrypt the hex
+	return lowGuess;
+}
+
+
+void findKey(u_int64_t *str, int keySize, int len)
+{
+	unsigned char blockCipher[len];
+	int i,x,z, f;
+	i = x = z = 0;
+
+	for (i = 0; i < len; ++z)
+	{
+		for (x = 0; x < (len/keySize); ++x, ++i)
+		{
+			blockCipher[i] = str[(x*keySize)+z];
+		}
+	}
+
+#ifdef PRINT_HEX_DECRYPT
+	for (x = 0; x < len;)
+	{
+			for (z = 0; z < 45; ++z, ++x)
+			{
+				if (x % (len/5) == 0)
+				{
+					printf("\n\n\n\n");
+				}
+				printf("%02x ", blockCipher[x]);
+			}
+			printf("\n");
+	}
+#endif
+		
+	return;
+
+
+}
+
 
 
 
