@@ -5,17 +5,15 @@
 #define MAX_STR_LEN 50000
 #define INIT_B64 1
 #define DECODE_B64 0
-#define PRINT_MSG
+#define PRINT_MAP
 
-
-
-void initB64DecodeMap(unsigned char b64[]);
+void initB64DecodeMap(unsigned char b64[], int guessmap[]);
 int  b64decrypt(unsigned char b64[], unsigned char * instr , u_int64_t b64decryptStr[]);
 unsigned char getB64Val(unsigned char c, unsigned char b64[]);
 unsigned char * loadFile(unsigned char * instr, unsigned char *filename);
 
 int hammingDistance(unsigned char *val1, unsigned char *val2);
-int guessKeysize(u_int64_t *str);
+int guessKeysize(u_int64_t *str, int guessmap[]);
 void findKey(u_int64_t *str, int keySize, int len);
 
 int main(int argc, char * argv[])
@@ -23,7 +21,7 @@ int main(int argc, char * argv[])
 	unsigned char b64[64], filename[MAX_STR_LEN];
 	unsigned char * instr = malloc(sizeof(char)*10000);
 	u_int64_t * b64decryptStr = malloc(sizeof(u_int64_t)*10000);	
-	int len, hd, x, z, nll = 0;
+	int len, hd, x, z, nll = 0, guessmap[40];
 
 
 	if (argv[1] == NULL)
@@ -33,11 +31,11 @@ int main(int argc, char * argv[])
 	}
 
 	strcpy(filename, argv[1]);
-	initB64DecodeMap(b64);
+	initB64DecodeMap(b64, guessmap);
 	instr = loadFile(instr, filename);
 	len = b64decrypt(b64, instr, b64decryptStr);	
 
-	hd = guessKeysize(b64decryptStr);
+	hd = guessKeysize(b64decryptStr,guessmap);
 	
 	findKey(b64decryptStr, hd, len);
 
@@ -49,6 +47,18 @@ int main(int argc, char * argv[])
 			printf("%02x ", b64decryptStr[x]);
 		}
 		printf("\n");
+	}
+#endif
+
+#ifdef PRINT_MAP
+	float normalized;	
+	for (x = 0; x < 40; ++x)
+	{
+		if (x != 0)
+		{
+			normalized = guessmap[x] / x;
+		}
+		printf("Guess size:%d - Edit distance: %f\n", x, normalized);
 	}
 #endif
 	free(instr);
@@ -160,13 +170,16 @@ int main(int argc, char * argv[])
 	return f;
 }
 
-void initB64DecodeMap(unsigned char b64[])
+void initB64DecodeMap(unsigned char b64[], int guessmap[])
 {
 	
 	int i;
 	unsigned char key = 'A';
 
-		
+		for (i = 0; i < 40; ++i)
+		{
+			guessmap[i] = 0;
+		}	
 
 		// Initialize b64 key map	
 		for (i =0; i < 26; ++i)
@@ -203,7 +216,7 @@ unsigned char getB64Val(unsigned char c, unsigned char b64[])
 			return i;
 		}
 	}
-	return;
+	return 0;
 }
 
 unsigned char * loadFile(unsigned char * instr, unsigned char *filename)
@@ -266,7 +279,7 @@ int hammingDistance(unsigned char *val1, unsigned char *val2)
 	return hammingD;
 }	
 
-int guessKeysize(u_int64_t *str)
+int guessKeysize(u_int64_t *str, int guessmap[])
 {
 	int guess, lowGuess, hd, i;
 	int lowest = 0x7FFFFFFF;
@@ -291,7 +304,7 @@ int guessKeysize(u_int64_t *str)
 		       	val2[i] = str[i+guess];
 		}		
 		hd = hammingDistance(val1,val2);
-
+		guessmap[guess] = hd;
 
 
 		// The lowest hamming distance will be recorded
@@ -315,9 +328,16 @@ int guessKeysize(u_int64_t *str)
 void findKey(u_int64_t *str, int keySize, int len)
 {
 	unsigned char blockCipher[len], key = 0x1, outchar, messageTemp[len], message[len];
-	int i,x,z, f, score = 0, lowestScore = 0x80000000;
+	int i,x,z, f, score = 0, lowestScore = 0x80000000, threshold, block;
 	i = x = z = f = 0;
-
+	unsigned char keyString[5];
+#ifdef PRINT_SCORE
+	printf("Enter key threshold: ");
+	scanf(" %d", &threshold); 
+	printf("Enter block to analyze: ");
+	scanf(" %d", &block);
+#endif
+	// Sort into blocks of keysize
 	for (i = 0; i < len; ++z)
 	{
 		for (x = 0; x < (len/keySize); ++x, ++i)
@@ -342,11 +362,21 @@ void findKey(u_int64_t *str, int keySize, int len)
 			if (score > lowestScore)
 			{
 				lowestScore = score;
+				keyString[f] = key;
 				for (i = ((len/5)*f); i < ((len/5)*(f+1)); ++i)
 				{
 					message[i] = messageTemp[i];
 				}
 			}
+#ifdef PRINT_SCORE 
+		if ((f+1) == block)
+		{	
+			if(score > threshold)
+			{
+				printf("Block %d: Key tried: 0x%02x Score: %d\n", (f+1), key, score);
+			}
+		}
+#endif
 			score = 0;
 		}
 	}
@@ -358,6 +388,14 @@ void findKey(u_int64_t *str, int keySize, int len)
 			printf("%c", message[i]);
 		}
 		printf("\n");
+	}
+#endif
+
+
+#ifdef PRINT_KEY
+	for (i = 0; i < 5; ++i)
+	{
+		printf("%c ", keyString[i]);
 	}
 #endif
 
