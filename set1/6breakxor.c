@@ -10,7 +10,7 @@
 void initB64DecodeMap(unsigned char b64[]);
 void b64decrypt(unsigned char b64[], unsigned char instr[], u_int64_t b64decryptStr[]);
 unsigned char getB64Val(unsigned char c, unsigned char b64[]);
-void loadFile(unsigned char instr[], unsigned char *filename);
+void loadFile(unsigned char * instr, unsigned char *filename);
 
 
 
@@ -19,10 +19,14 @@ void loadFile(unsigned char instr[], unsigned char *filename);
 
 int main(int argc, char * argv[])
 {
-	unsigned char b64[64], instr[MAX_STR_LEN] , filename[MAX_STR_LEN];
+	unsigned char b64[64], filename[MAX_STR_LEN];
+	unsigned char * instr = malloc(sizeof(char)*1);
+	u_int64_t * b64decryptStr = malloc(sizeof(u_int64_t)*1);	
 	int i, x, z, nll = 0;
+
+
+
 	strcpy(filename, argv[1]);
-	u_int64_t b64decryptStr[MAX_STR_LEN];
 
 	// Loads the decoding index for base64 to hex
 	initB64DecodeMap(b64);
@@ -34,35 +38,9 @@ int main(int argc, char * argv[])
 	b64decrypt(b64, instr, b64decryptStr);	
 
 
-	size_t len  = (sizeof(b64decryptStr)/sizeof(u_int64_t));
+	// Write a function to print b64decrypt	
 
-
-	for (i = 0; i < len; ++i)
-	{
-		printf("%x ", b64decryptStr[i]);
-//#ifdef DEBUG
-		if (i % 20 == 0)
-		{
-			printf("\n");
-		}
-	
-//#endif
-		if (b64decryptStr[i] != 0)
-		{
-			nll = 0;
-		}
-		if (b64decryptStr[i] == 0)
-		{
-			nll++;
-			if (nll > 20)
-			{
-				break	;
-			}
-		}
-	}
-	
-
-
+	free(instr);
 
 	return 0;
 }
@@ -213,21 +191,30 @@ unsigned char getB64Val(unsigned char c, unsigned char b64[])
 
 
 
-void loadFile(unsigned char instr[], unsigned char *filename)
+void loadFile(unsigned char * instr, unsigned char *filename)
 {
 	FILE *fp;
-	unsigned char c;
-	int i = 0;
+	long len;
+	size_t result;
 
 	fp = fopen(filename, "r");
-	do 
+	len = fseek(fp, 0, SEEK_END);
+	rewind(fp);
+
+	result = realloc(instr, sizeof(char)*len);
+	fread(instr, sizeof(char), len, fp);
+
+	if (result != len)
 	{
-		c = fgetc(fp);
-		if (c != '\n')
-		{
-			instr[i++] = c;
-		}
-	} while ((c != EOF) && (i < MAX_STR_LEN));
+		fputs("Reading Errow", stderr);
+		exit(3);
+	}
+	
+	fclose(fp);
+
+
+
+
 	return;
 
 
