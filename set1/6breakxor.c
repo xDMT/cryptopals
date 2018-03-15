@@ -2,67 +2,95 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_STR_LEN 50000
-#define INIT_B64 1
-#define DECODE_B64 0
-#define PRINT_MAP
 
-void initB64DecodeMap(unsigned char b64[], int guessmap[]);
-int  b64decrypt(unsigned char b64[], unsigned char * instr , u_int64_t b64decryptStr[]);
-unsigned char getB64Val(unsigned char c, unsigned char b64[]);
-unsigned char * loadFile(unsigned char * instr, unsigned char *filename);
+typedef unsigned char * bytePtr;
+typedef unsigned char  byte;
 
-int hammingDistance(unsigned char *val1, unsigned char *val2);
-int guessKeysize(u_int64_t *str, int guessmap[]);
-void findKey(u_int64_t *str, int keySize, int len);
+
+
+size_t b64decrypt(bytePtr b64, bytePtr instr, bytePtr b64decryptStr, size_t len);
+bytePtr loadFile(bytePtr instr, bytePtr filename);
 
 int main(int argc, char * argv[])
 {
-	unsigned char b64[64], filename[MAX_STR_LEN];
-	unsigned char * instr = malloc(sizeof(char)*10000);
-	u_int64_t * b64decryptStr = malloc(sizeof(u_int64_t)*10000);	
-	int len, hd, x, z, nll = 0, guessmap[40];
-
-
-	if (argv[1] == NULL)
-	{
-		printf("\nInvalid argument\n");
-		exit(0);
+	FILE * fp = fopen(argv[1], "r");
+	if(!fp){
+		exit(1);
 	}
+	fseek(fp, 0, SEEK_END);
+	size_t len = ftell(fp);
+	rewind(fp);
+	bytePtr inBlock = calloc(len, sizeof(byte));
+	if(fread(inBlock, sizeof(char), len, fp) != len){
+		exit(1);
+	}
+	fclose(fp);
 
-	strcpy(filename, argv[1]);
-	initB64DecodeMap(b64, guessmap);
-	instr = loadFile(instr, filename);
-	len = b64decrypt(b64, instr, b64decryptStr);	
 
-	hd = guessKeysize(b64decryptStr,guessmap);
-	
-	findKey(b64decryptStr, hd, len);
+	bytePtr outBlock = calloc((len*3)/4, sizeof(byte));
+	bytePtr b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345679+/";
 
-#ifdef PRINT_HEX
-	for (x = 0; x < len;)
+	size_t len2 = b64decrypt(b64, inBlock, outBlock, len);
+
+	byte x,y,key,out,keymap[5];
+	int z;
+	u_int64_t scoreHigh = 0x7FFFFFFF, score = 0x0;
+	bytePtr scoreScale = "etaoinsrhldcumfpgwybvkxjqz ETAOINSRHLDCUMFPGWYBVKXJQZ.?!123456789";
+	bytePtr pch;
+
+	for (y = 0; y < 5; ++y)
 	{
-		for (z = 0; z < 45; ++z, ++x)
+		scoreHigh = 0x7FFFFFFF;
+		for (x = 0; x < 0xFF; ++x)
 		{
-			printf("%02x ", b64decryptStr[x]);
+			score = 0;
+			for(z = 0; z < (len2/5); ++z)
+			{
+				key = x;
+				out = outBlock[(z*5)+y] ^ key;
+				pch = strchr(scoreScale, out);
+				if (!pch)
+				{
+					score += 255;
+				}
+				else
+				{
+					score += pch-scoreScale;
+				}
+			}
+			if (score < scoreHigh)
+			{
+				scoreHigh = score;
+				keymap[y] = x;
+			}
 		}
-		printf("\n");
 	}
-#endif
 
-#ifdef PRINT_MAP
-	float normalized;	
-	for (x = 0; x < 40; ++x)
+
+
+	for (z = 0; z < len2; )
 	{
-		if (x != 0)
+		for (y = 0; y < 5; ++y, ++z)
 		{
-			normalized = guessmap[x] / x;
+			outBlock[z] ^= keymap[y];
+			printf("%c",outBlock[z]);
 		}
-		printf("Guess size:%d - Edit distance: %f\n", x, normalized);
-	}
-#endif
-	free(instr);
-	free(b64decryptStr);
+	}	
+
+
+	printf("%s, %d", keymap, scoreHigh);
+
+				
+
+				
+
+
+
+
+
+
+
+
 
 	return 0;
 }
@@ -79,16 +107,14 @@ int main(int argc, char * argv[])
 
 
 
- int b64decrypt(unsigned char b64[], unsigned char *instr, u_int64_t b64decryptStr[])
+size_t b64decrypt(bytePtr b64, bytePtr instr, bytePtr b64decryptStr, size_t len)
 {
 
 	int i, x, z, f;
-	unsigned char tempbyte[9];
-	tempbyte[8] = '\0';
-	void * np  = NULL;
+	bytePtr tempbyte = calloc(9, sizeof(byte));
+	bytePtr pch;
 	u_int64_t b64Read, out, hexOut;
-	size_t len = strlen(instr);
-		
+	
 
 
 
@@ -117,7 +143,8 @@ int main(int argc, char * argv[])
 		}
 		for (z = 0, x = 6; z < 8; ++z)
 		{
-			out = getB64Val(tempbyte[z], b64);
+			pch = strchr(b64, tempbyte[z]);
+			out = pch-b64;	
 			b64Read += out;
 			if (z < 7)
 			{
@@ -169,260 +196,4 @@ int main(int argc, char * argv[])
 	}
 	return f;
 }
-
-void initB64DecodeMap(unsigned char b64[], int guessmap[])
-{
-	
-	int i;
-	unsigned char key = 'A';
-
-		for (i = 0; i < 40; ++i)
-		{
-			guessmap[i] = 0;
-		}	
-
-		// Initialize b64 key map	
-		for (i =0; i < 26; ++i)
-		{
-			b64[i] = key++;
-		}
-		key = 'a';
-		for (; i < 52; ++i)
-		{
-			b64[i] = key++;
-		}
-		key = '0';
-		for (; i < 62; ++i)
-		{
-			b64[i] = key++;
-		}
-		b64[62] = '+';
-		b64[63] = '/';
-		
-
-	return;
-}
-
-unsigned char getB64Val(unsigned char c, unsigned char b64[])
-{
-	// This function increments i untill it finds the matching b64 character
-	// and returns the value of i
-	unsigned char i = 0;
-	for (; i < 63 ; ++i)
-	{
-		
-		if (b64[i] == c)
-		{
-			return i;
-		}
-	}
-	return 0;
-}
-
-unsigned char * loadFile(unsigned char * instr, unsigned char *filename)
-{
-	FILE *fp;
-	long len;
-	size_t result;
-
-	fp = fopen(filename, "r");
-	fp == NULL ? exit(1) : fp;
-	fseek(fp, 0, SEEK_END);
-	len = ftell(fp);
-	rewind(fp);
-
-	result = fread(instr, sizeof(char), len, fp);
-	if (result != len)
-	{
-		printf("\nRead Error\n");
-		exit(0);
-	}
-	fclose(fp);
-
-
-
-
-	return instr;
-
-
-}
-
-int hammingDistance(unsigned char *val1, unsigned char *val2)
-{
-	int len, i,x, hammingD = 0;
-	len = strlen(val1);
-	(strlen(val2) > len) ? (len = strlen(val2)) : len;
-	unsigned char *result = malloc(sizeof(unsigned char)*len);
-	unsigned char m2;
-
-
-	// Xors each character of two strings and stores the result in result
-	for (i = 0; i < len; ++i)
-	{
-		result[i] = val1[i] ^ val2[i];
-	}
-
-	// Iterates through result determining the differing bits 
-	// by anding each character of result with 1, 
-	// and adding a count when the result of the AND is 1
-	// indicating a differing bit
-	for (i = 0 ; i < (len); ++i)
-	{
-		for (x = 0; x < 8; ++x)
-		{
-			m2 = result[i] & 0x1;
-			( m2 == 0x1 ) ? hammingD++ : (m2 = 0x0);
-			result[i] = result[i] >> 1;
-		}
-	}
-	free(result);
-	return hammingD;
-}	
-
-int guessKeysize(u_int64_t *str, int guessmap[])
-{
-	int guess, lowGuess, hd, i;
-	int lowest = 0x7FFFFFFF;
-	unsigned char *val1, *val2;
-
-	val1 = malloc(sizeof(unsigned char)*1);
-	val2 = malloc(sizeof(unsigned char)*1);
-
-
-	// Tries a series of key size guesses
-	for (guess = 2; guess < 40; ++guess)
-	{
-		val1 = realloc(val1,sizeof(unsigned char)*guess);
-		val2 = realloc(val2,sizeof(unsigned char)*guess);
-
-		// Copys two strings that are guess characters away from
-		// eachother and sends them to the hammingDistance function
-		
-		for (i = 0; i < guess; ++i)
-		{
-			val1[i] = str[i];
-		       	val2[i] = str[i+guess];
-		}		
-		hd = hammingDistance(val1,val2);
-		guessmap[guess] = hd;
-
-
-		// The lowest hamming distance will be recorded
-		// and the keysize that produced the lowest hammingDistance
-		// is also recorded
-		if (hd < lowest)
-		{
-			lowest = hd;
-			lowGuess = guess;
-		}
-	}
-	free(val1);
-	free(val2);
-
-	// The keysize that produced the lowest hamming distance is returned for a following function
-	// to single Xor decrypt the hex
-	return lowGuess;
-}
-
-
-void findKey(u_int64_t *str, int keySize, int len)
-{
-	unsigned char blockCipher[len], key = 0x1, outchar, messageTemp[len], message[len];
-	int i,x,z, f, score = 0, lowestScore = 0x80000000, threshold, block;
-	i = x = z = f = 0;
-	unsigned char keyString[5];
-#ifdef PRINT_SCORE
-	printf("Enter key threshold: ");
-	scanf(" %d", &threshold); 
-	printf("Enter block to analyze: ");
-	scanf(" %d", &block);
-#endif
-	// Sort into blocks of keysize
-	for (i = 0; i < len; ++z)
-	{
-		for (x = 0; x < (len/keySize); ++x, ++i)
-		{
-			blockCipher[i] = str[(x*keySize)+z];
-		}
-	}
-
-	
-
-	// Make single xor decrypt function here
-	for (f = 0; f < 5; ++f)
-	{
-		for (key = 0x1; key < 0xFF; key++)
-		{	
-			for(i = ((len/5)*f); i < ((len/5)*(f+1)); ++i)
-			{
-				outchar = key ^ blockCipher[i];
-				( (outchar > 0x41) && (outchar < 0x7A) ) ? score++ : score--;
-				messageTemp[i] = outchar;
-			}
-			if (score > lowestScore)
-			{
-				lowestScore = score;
-				keyString[f] = key;
-				for (i = ((len/5)*f); i < ((len/5)*(f+1)); ++i)
-				{
-					message[i] = messageTemp[i];
-				}
-			}
-#ifdef PRINT_SCORE 
-		if ((f+1) == block)
-		{	
-			if(score > threshold)
-			{
-				printf("Block %d: Key tried: 0x%02x Score: %d\n", (f+1), key, score);
-			}
-		}
-#endif
-			score = 0;
-		}
-	}
-#ifdef PRINT_MSG
-	for (i = 0; i < len; ++i)
-	{
-		for (z = 0; z < 45; ++z)
-		{
-			printf("%c", message[i]);
-		}
-		printf("\n");
-	}
-#endif
-
-
-#ifdef PRINT_KEY
-	for (i = 0; i < 5; ++i)
-	{
-		printf("%c ", keyString[i]);
-	}
-#endif
-
-
-
-
-#ifdef PRINT_HEX_DECRYPT
-	for (x = 0; x < len;)
-	{
-			for (z = 0; z < 45; ++z, ++x)
-			{
-				if (x % (len/5) == 0)
-				{
-					printf("\n\n\n\n\nBlock %d\n", ((f++) +1));
-				}
-				printf("%02x ", blockCipher[x]);
-			}
-			printf("\n");
-	}
-#endif
-		
-	return;
-
-
-}
-
-
-
-
 
