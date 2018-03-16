@@ -40,14 +40,13 @@ int main(int argc, char * argv[])
 	if(!fp){
 		exit(1);
 	}
-
-
+	// File length sequence
 	fseek(fp, 0, SEEK_END);
 	len = ftell(fp);
 	rewind(fp);
 	
 	
-	
+	// Start file read
 	bytePtr inBlock = calloc(len, sizeof(byte));
 	if(fread(inBlock, sizeof(char), len, fp) != len){
 		exit(1);
@@ -60,11 +59,21 @@ int main(int argc, char * argv[])
 	// Allocate space for decoded base64, for every 3 hex characters, 4 base64
 	// characters result, len2 stores exact length of outBlock
 	bytePtr outBlock = calloc((len*3)/4, sizeof(byte));
-	len2 = b64decrypt(b64, inBlock, outBlock, len);
+	
+	// Get hex equiv of base64 block
+	b64decrypt(b64, inBlock, outBlock, len);
 
+
+
+	// Initialize a guess map for most likely keysizes
 	memset(guessMap, 0, 40);
+
+	// Fill guessmap with best possible keysizes
 	guessKeysize(outBlock, guessMap);
 
+
+
+	// Finds the key and displays the decrypted message
 	decryptMessageAndFindKey(outBlock, guessMap, scoreScale, len);
 
 	
@@ -91,11 +100,12 @@ int main(int argc, char * argv[])
 
 void decryptMessageAndFindKey(bytePtr outBlock, int trySize[], bytePtr scoreScale, size_t blockLength)
 {
-	int z, x, i, keySize;
-	byte key, out;
+	int score, z, x, i, r, b, keySize, scoreHigh, scoreHighMessage = INT_MAX;
+	byte key, out, message[blockLength], tmessage[blockLength];
 	bytePtr pch;
 	double scoreAvg;
 
+	memset(message, 0 , blockLength);
 	// Each keysize guess
 	for (z = 0; trySize[z] != 0; ++z)
 	{
@@ -112,11 +122,11 @@ void decryptMessageAndFindKey(bytePtr outBlock, int trySize[], bytePtr scoreScal
 		{
 
 
-			int scoreHigh = INT_MAX;
+			scoreHigh = INT_MAX;
 			// Try 256 keys
 			for (key = 0x0; key < 0xFF; ++key)
 			{
-				int score = 0;
+				score = 0;
 				// Use each key against individual blocks of keysize
 				// using multiple of keysize and offset
 				for (i = 0; x+(keySize*i) < blockLength; ++i)
@@ -132,6 +142,10 @@ void decryptMessageAndFindKey(bytePtr outBlock, int trySize[], bytePtr scoreScal
 						score += 255;
 					}
 				}
+				// Get lowest score of all 256 keys by comparing to
+				// and modifying INT_MAX
+				//
+				// Store lowest scoring key in the keyMap
 				if (score < scoreHigh)
 				{
 					keyMap[x] = key;
@@ -144,7 +158,40 @@ void decryptMessageAndFindKey(bytePtr outBlock, int trySize[], bytePtr scoreScal
 		scoreAvg/= (double)keySize;
 		printf("Average score for key: %s is %.3f\n", keyMap, scoreAvg);
 			
+		// Try key on main block, only show message if score is lowest
+		memset(tmessage, 0 , blockLength);
+		score = 0;
+		for (r = 0; r < blockLength;)
+		{
+			for (b = 0; b < keySize; ++b, ++r)
+			{
+				tmessage[r] = keyMap[b] ^ outBlock[r];
+				pch = strchr(scoreScale, tmessage[r]);
+				if(pch)
+				{
+					score += pch-scoreScale;
+				}
+				else
+				{
+					score += 255;
+				}
+			}
+		}
+		if (score < scoreHighMessage)
+		{
+			strcpy(message, tmessage);
+			scoreHighMessage = score;
+		}
+
+
+
 	}
+
+	
+	printf("\n\n\n####################################\n\n\n");
+
+	printf("%s", message);
+
 	return;
 
 
@@ -198,15 +245,19 @@ double guessKeysize(bytePtr outBlock, int trySize[])
 		hd /= guess;
 
 		// All sub-2 hamming distances are to be tried as possible
-		// key sizes
+		// key sizes, this is because after reviewing hamming distances
+		// of 38 guess, there are only 4-6 keysizes that produce sub-2
+		// hamming distances
 		if (hd < 2)
 		{
 			trySize[z++] = guess;
 		}
 
-		printf("Guess %f - Score %.2f\n", guess, hd); 
+		printf("Guess %.0f - Score %.2f\n", guess, hd); 
 	}
+	
 
+	printf("\n\n\n####################################\n\n\n");
 	return 0;
 
 
@@ -225,11 +276,17 @@ int hammingDistance(bytePtr val1, bytePtr val2)
 
 	byte result[len], m2;
 
+
+	// Xors each block against eachother
 	for(i = 0; i < len; ++i)
 	{
 		result[i] = val1[i] ^ val2[i];
 	}
 
+
+	// Counts one bits by ANDing the 0x1 bit
+	// and shifting byte to account for every bit in
+	// the byte
 	for (i = 0; i < len; ++i)
 	{
 		for (x = 0; x < 8; ++x)
