@@ -7,13 +7,13 @@
 #define DECODE_B64 0
 #define PRINT_MAP
 
-void initB64DecodeMap(unsigned char b64[], int guessmap[]);
+void initB64DecodeMap(unsigned char b64[], double guessmap[]);
 int  b64decrypt(unsigned char b64[], unsigned char * instr , u_int64_t b64decryptStr[]);
 unsigned char getB64Val(unsigned char c, unsigned char b64[]);
 unsigned char * loadFile(unsigned char * instr, unsigned char *filename);
 
-int hammingDistance(unsigned char *val1, unsigned char *val2);
-int guessKeysize(u_int64_t *str, int guessmap[]);
+double hammingDistance(unsigned char *val1, unsigned char *val2);
+int guessKeysize(u_int64_t *str, double guessmap[]);
 void findKey(u_int64_t *str, int keySize, int len);
 
 int main(int argc, char * argv[])
@@ -21,8 +21,8 @@ int main(int argc, char * argv[])
 	unsigned char b64[64], filename[MAX_STR_LEN];
 	unsigned char * instr = malloc(sizeof(char)*10000);
 	u_int64_t * b64decryptStr = malloc(sizeof(u_int64_t)*10000);	
-	int len, hd, x, z, nll = 0, guessmap[40];
-
+	int len, hd, x, z, nll = 0;
+	double guessmap[40];
 
 	if (argv[1] == NULL)
 	{
@@ -170,7 +170,7 @@ int main(int argc, char * argv[])
 	return f;
 }
 
-void initB64DecodeMap(unsigned char b64[], int guessmap[])
+void initB64DecodeMap(unsigned char b64[], double guessmap[])
 {
 	
 	int i;
@@ -247,9 +247,10 @@ unsigned char * loadFile(unsigned char * instr, unsigned char *filename)
 
 }
 
-int hammingDistance(unsigned char *val1, unsigned char *val2)
+double hammingDistance(unsigned char *val1, unsigned char *val2)
 {
-	int len, i,x, hammingD = 0;
+	int len, i,x;
+	double hammingD;
 	len = strlen(val1);
 	(strlen(val2) > len) ? (len = strlen(val2)) : len;
 	unsigned char *result = malloc(sizeof(unsigned char)*len);
@@ -279,11 +280,13 @@ int hammingDistance(unsigned char *val1, unsigned char *val2)
 	return hammingD;
 }	
 
-int guessKeysize(u_int64_t *str, int guessmap[])
+int guessKeysize(u_int64_t *str, double guessmap[])
 {
-	int guess, lowGuess, hd, i;
+	int guess, lowGuess, i;
 	int lowest = 0x7FFFFFFF;
 	unsigned char *val1, *val2;
+	double hd; 
+
 
 	val1 = malloc(sizeof(unsigned char)*1);
 	val2 = malloc(sizeof(unsigned char)*1);
@@ -304,7 +307,7 @@ int guessKeysize(u_int64_t *str, int guessmap[])
 		       	val2[i] = str[i+guess];
 		}		
 		hd = hammingDistance(val1,val2);
-		guessmap[guess] = hd;
+		guessmap[guess] = hd/guess;
 
 
 		// The lowest hamming distance will be recorded
