@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,38 +22,41 @@ int getStringsFromFile(char *filecontents[], FILE * fp);
 
 int main(int argc, char * argv[])
 {
-	unsigned char buf1[256], decbuf[3], key = 0, message[256];
-	long int hexDecode[256], out;
-	int i,x,z,r,f,score,maxScore;
+	unsigned char buf1[256], decbuf[3], key, tmessage[256], message[256], out;
+	unsigned char keyCorrect,  *pch, *freq = "etaoin srhldcumfpgwybvkxjqzETAOINSRHLDCUMFPGWYBVKXJQZ0123456789.?!"; 
+	long int hexDecode[256];
+	
+	int i,x,z,r,f,score, len, scoreMax = INT_MAX;
 	size_t lenb1;
-	char *np = NULL;
-	char *filecontents[1000];
-	FILE * fp;
 
+	i = x = z = r = f = score = 0;
+	decbuf[2] = '\0';
 
-	fp = fopen(argv[1], "r");
-	getStringsFromFile(filecontents, fp);	
+	FILE * fp = fopen(argv[1], "r");
+	fseek(fp, 0, SEEK_END);
+	len = ftell(fp);
+	rewind(fp);
+	char *filecontents[len];
+	len = getStringsFromFile(filecontents, fp);	
 	fclose(fp);
 	
 
-	i = x = z = r = f = score = maxScore =0;
-	decbuf[2] = '\0';
 
 
 
 
+	memset(message, '\0', 256);
 	// Read through all recorded strings in file
-	while(filecontents[++f] != NULL)
+	for (f = 0; f < len;)
 	{
-		//Load each individually into buf1
-		strcpy(buf1, filecontents[f]);
+		//Load each string individually into buf1
+		strcpy(buf1, filecontents[f++]);
 		lenb1 = strlen(buf1);
+		memset(hexDecode, '\0', 256);
+		memset(tmessage, '\0', 256);
 
 			
 
-		// Print out 8 possible xor'd strings 
-		for (r = 0, score = 0; r < 255; ++r, ++key)
-		{	
 			// First decode into hex and store in integer array
 			for (i = 0, z = 0; i < lenb1; ++z)
 			{
@@ -62,41 +66,36 @@ int main(int argc, char * argv[])
 					decbuf[x] = buf1[i];
 				}
 				// Get each character into its hexadecimal equivalent
-				hexDecode[z]  = strtol(decbuf, &np, 16);
+				hexDecode[z]  = strtol(decbuf, NULL, 16);
 			}
-
-			// Now hexDecode should be loaded with the hex representation
-			// of the entered string, and we just have to xor through the
-			// array on an incremented xor key through 8 possible values
-			// maybe more if I have mistaken character by a byte instead of 4 bits
-			score = 0;
-			for (z = 0; z < (lenb1/2); ++z)
-			{
-				out = hexDecode[z];
-				out ^= key;
 			
-				// String scoring for valid ASCII characters
-				// Higher the score, higher likely hood of decoded message
-				if ((isalpha(out)) || (isspace(out)))
+			// Xor all key values and score
+			for (key = 0; key < 0xFF; ++key)
+			{
+				score = 0;
+				for (r = 0; hexDecode[r] != '\0'; ++r)
 				{
-					score++;
+					out = hexDecode[r] ^ key;
+					pch = strchr(freq, out);
+					tmessage[r] = out;
+					if (pch)
+					{
+						score += pch-freq;
+					}
+					else
+					{
+						score += 255;
+					}
 				}
-				message[z] = out;
+				if (score < scoreMax)
+				{
+					scoreMax = score;
+					strcpy(message,tmessage);
+				}
 			}
-			
-			// This line stops print outs of strings that scored lower
-			// than previous strings outputted, which should ultimately put 
-			// the highest scoring string at the bottom of the list
-			(score > maxScore) ? (maxScore  = score) : score;
-			if (score >= maxScore)
-			{
-			printf("Entered string to decode: %s\n", buf1);
-			printf("XOR'd with %x: %s ", key,message);
-			printf(" - String score: %d\n", score);
-			}
-
-		}
 	}
+	printf("%s", message);
+
 
 
 
@@ -113,5 +112,5 @@ int getStringsFromFile(char *filecontents[], FILE * fp)
 		ret = getline(&filecontents[i++], &n, fp);
 	}	
 
-	return 0;
+	return i;
 }
