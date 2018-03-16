@@ -1,22 +1,27 @@
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
 
 
+
+#define TOTAL_GUESSES 40
+
 typedef unsigned char * bytePtr;
 typedef unsigned char  byte;
 
 
 
-double guessKeysize(bytePtr outBlock);
+double guessKeysize(bytePtr outBlock, int trySize[]);
+void decryptMessageAndFindKey(bytePtr outBlock, int trySize[], bytePtr scoreScale, size_t blockLength);
 size_t b64decrypt(bytePtr b64, bytePtr instr, bytePtr b64decryptStr, size_t len);
 int hammingDistance(bytePtr val1, bytePtr val2);
 
 int main(int argc, char * argv[])
 {
 	size_t len, len2;
-	int z,i;
+	int z,i, guessMap[TOTAL_GUESSES];
 	FILE * fp = fopen(argv[1], "r");
 
 	byte x,y,key,out;
@@ -24,7 +29,7 @@ int main(int argc, char * argv[])
 	bytePtr scoreScale = "etaoinsrhldcumfpgwybvkxjqz ETAOINSRHLDCUMFPGWYBVKXJQZ.?!123456789";
 	
 	// Array to contain the five keysizes with the lowest hamming distance
-	bytePtr pch, guessMap[5];
+	bytePtr pch;
 
 	u_int64_t scoreHigh = 0x7FFFFFFF, score = 0x0;
 
@@ -57,8 +62,12 @@ int main(int argc, char * argv[])
 	bytePtr outBlock = calloc((len*3)/4, sizeof(byte));
 	len2 = b64decrypt(b64, inBlock, outBlock, len);
 
+	memset(guessMap, 0, 40);
+	guessKeysize(outBlock, guessMap);
 
-	guessKeysize(outBlock);
+	decryptMessageAndFindKey(outBlock, guessMap, scoreScale, len);
+
+	
 
 
 
@@ -80,9 +89,75 @@ int main(int argc, char * argv[])
 	return 0;
 }
 
-double guessKeysize(bytePtr outBlock)
+void decryptMessageAndFindKey(bytePtr outBlock, int trySize[], bytePtr scoreScale, size_t blockLength)
 {
-	int i, x;
+	int z, x, i, keySize;
+	byte key, out;
+	bytePtr pch;
+	double scoreAvg;
+
+	// Each keysize guess
+	for (z = 0; trySize[z] != 0; ++z)
+	{
+		keySize = trySize[z];
+		
+		
+		// Array to hold the correct key
+		byte keyMap[keySize];
+		
+
+		scoreAvg = 0;
+		// Solve each block of keysize
+		for (x = 0; x < keySize; ++x)
+		{
+
+
+			int scoreHigh = INT_MAX;
+			// Try 256 keys
+			for (key = 0x0; key < 0xFF; ++key)
+			{
+				int score = 0;
+				// Use each key against individual blocks of keysize
+				// using multiple of keysize and offset
+				for (i = 0; x+(keySize*i) < blockLength; ++i)
+				{
+					out = key ^ outBlock[x+(keySize*i)];
+					pch = strchr(scoreScale, out);
+					if(pch)
+					{
+						score += pch-scoreScale;
+					}
+					else
+					{
+						score += 255;
+					}
+				}
+				if (score < scoreHigh)
+				{
+					keyMap[x] = key;
+					scoreHigh = score;
+				}
+				scoreAvg += score;
+			}
+		}
+
+		scoreAvg/= (double)keySize;
+		printf("Average score for key: %s is %.3f\n", keyMap, scoreAvg);
+			
+	}
+	return;
+
+
+
+					
+}
+
+
+
+
+double guessKeysize(bytePtr outBlock, int trySize[])
+{
+	int i, x, z = 0;
 	double lowest = DBL_MAX; 
 	double hd, guess, lowGuess;
 	
@@ -100,21 +175,35 @@ double guessKeysize(bytePtr outBlock)
 		memset(val3, 0, (int)guess);
 		memset(val4, 0, (int)guess);
 
+		// Compares blocks of guess size 
 		for (i = 0; i < guess; ++i)
 		{
 			val1[i] = outBlock[i];
 			val2[i] = outBlock[i+(int)guess];
 		}
 		i++;	
+		// 4 Seperate blocks
 		for (x = 0; x < guess; ++i, ++x)
 		{
 			val3[x] = outBlock[i];
 			val4[x] = outBlock[i+(int)guess];
 		}
+		// Gets hamming distance of each block set
+		// Averages the result by dividing by sets (2)
 		hd += ((hammingDistance(val1,val2)));
 		hd += ((hammingDistance(val3,val4)));
 		hd /= 2;
+
+		// Normalizes the result by dividing by guess
 		hd /= guess;
+
+		// All sub-2 hamming distances are to be tried as possible
+		// key sizes
+		if (hd < 2)
+		{
+			trySize[z++] = guess;
+		}
+
 		printf("Guess %f - Score %.2f\n", guess, hd); 
 	}
 
