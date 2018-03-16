@@ -1,30 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#define MAX_INPUT 1000
 
 int main(int argc, char * argv[])
 {
-	unsigned char b64[64], key = 'A', instr[1000], tempbyte[6];
+	unsigned char key = 'A', instr[MAX_INPUT];
+	unsigned char * tempbyte = calloc(7,sizeof(unsigned char));
+	unsigned char * b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	int i, x;
 	long int hexRead, out;
+	
+	
 	strcpy(instr,argv[1]);
-	void * np  = NULL;
 
 
-	// Initialize b64 key map	
-	for (i =0; i < 26; ++i)
-	{
-		b64[i] = key++;
-	}
-	key = 'a';
-	for (; i < 52; ++i)
-	{
-		b64[i] = key++;
-	}
-	key = '0';
-	for (; i < 64; ++i)
-	{
-		b64[i] = key++;
-	}
+
 
 
 
@@ -39,7 +31,7 @@ int main(int argc, char * argv[])
 		}
 		// Then it converts the hex characters(as an encoded string) to its actual
 		// hex integer value
-		hexRead = strtol(tempbyte,np, 16);
+		hexRead = strtol(tempbyte,NULL, 16);
 
 
 		// Then in order to get the corresponding base 64 character
@@ -70,7 +62,7 @@ int main(int argc, char * argv[])
 	}
 
 	
-
+	free(tempbyte);
 
 
 	return 0;

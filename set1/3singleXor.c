@@ -13,64 +13,64 @@
 
 int main(int argc, char * argv[])
 {
-	unsigned char buf1[256], outputs[8][256], decbuf[3], key = 0x1, message[256];
-	long int hexDecode[256], out;
-	int i,x,z,r,score, hasPrintable;
+	unsigned char buf1[256], decbuf[3], message[256], tmessage[256], *pos;
+	unsigned char key, keyCorrect, out, *freq = "etaoin srhldcumfpgwybvkxjqzETAOINSRHLDCUMFPGWYBVKXJQZ0123456789.?!"; 
+	long int hexDecode[256];
+	int i,x,z,score, scoreHigh = 0x7FFFFFFF;
 	size_t lenb1;
-	char * np = NULL;
 	
-	i = x = z = r = score =0;
+	i = x = z = score =0;
 	decbuf[2] = '\0';
-
 
 #ifndef DEBUG
 	strcpy(buf1,argv[1]);
 #else
 	strcpy(buf1, "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736");
 #endif
-
 	lenb1 = strlen(buf1);
 
+
 	printf("Entered string to decode: %s\n\n", buf1);
-		
 
-	// Print out 8 possible xor'd strings 
-	for (r = 0, score = 0; r < 255; ++r, ++key)
+	// First decode into hex and store in integer array
+	for (i = 0, z = 0; i < lenb1; ++z)
+	{
+		// Load word into buffer
+		for (x = 0; x < 2; ++x, ++i)
+		{
+			decbuf[x] = buf1[i];
+		}
+		// Get each character into its hexadecimal equivalent
+		hexDecode[z]  = strtol(decbuf, NULL, 16);
+	}
+	
+	
+	for ( key = 0; key < 255; ++key)
 	{	
-		// First decode into hex and store in integer array
-		for (i = 0, z = 0; i < lenb1; ++z)
+
+		for (score = 0, z = 0; z < (lenb1/2); ++z)
 		{
-			// Load word into buffer
-			for (x = 0; x < 2; ++x, ++i)
+			out = hexDecode[z] ^ key;
+			pos = strchr(freq, out);
+			if(pos) 
 			{
-				decbuf[x] = buf1[i];
+				score += pos-freq;
 			}
-			// Get each character into its hexadecimal equivalent
-			hexDecode[z]  = strtol(decbuf, &np, 16);
+			else
+			{
+				score += 255;
+			}
+			tmessage[z] = out;
 		}
-
-		// Now hexDecode should be loaded with the hex representation
-		// of the entered string, and we just have to xor through the
-		// array on an incremented xor key through 8 possible values
-		// maybe more if I have mistaken character by a byte instead of 4 bits
-		score = 0;
-		hasPrintable = 1;
-		for (z = 0; z < (lenb1/2); ++z)
+		if (score < scoreHigh)
 		{
-			out = hexDecode[z];
-			out ^= key;	
-			( (out > 0x41) && (out < 0x7A) ) ? score++ : score--;
-			message[z] = out;
-		}
-
-		if (score >= 20)
-		{
-		printf("XOR'd with %x: %s ", key,message);
-		printf(" - String score: %d\n", score);
+			keyCorrect = key;
+			scoreHigh = score;
+			strcpy(message, tmessage);
 		}
 
 	}
-
+	printf("%s - XOR'd with %x\n", message, keyCorrect);
 
 
 
