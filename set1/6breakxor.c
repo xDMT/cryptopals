@@ -5,7 +5,11 @@
 #define MAX_STR_LEN 50000
 #define INIT_B64 1
 #define DECODE_B64 0
-#define PRINT_MAP
+
+
+#define PRINT_DECRYPTED
+#define SET_KEY
+
 
 void initB64DecodeMap(unsigned char b64[], int guessmap[]);
 int  b64decrypt(unsigned char b64[], unsigned char * instr , u_int64_t b64decryptStr[]);
@@ -14,15 +18,15 @@ unsigned char * loadFile(unsigned char * instr, unsigned char *filename);
 
 int hammingDistance(unsigned char *val1, unsigned char *val2);
 int guessKeysize(u_int64_t *str, int guessmap[]);
-void findKey(u_int64_t *str, int keySize, int len);
+void findKey(u_int64_t *str, int keySize, int len, unsigned char * keyString);
 
 int main(int argc, char * argv[])
 {
 	unsigned char b64[64], filename[MAX_STR_LEN];
 	unsigned char * instr = malloc(sizeof(char)*10000);
 	u_int64_t * b64decryptStr = malloc(sizeof(u_int64_t)*10000);	
-	int len, hd, x, z, nll = 0, guessmap[40];
-
+	int len, hd, x, i, z, nll = 0, guessmap[40];
+	
 
 	if (argv[1] == NULL)
 	{
@@ -37,7 +41,9 @@ int main(int argc, char * argv[])
 
 	hd = guessKeysize(b64decryptStr,guessmap);
 	
-	findKey(b64decryptStr, hd, len);
+	unsigned char keyString[hd];
+
+	findKey(b64decryptStr, hd, len, keyString);
 
 #ifdef PRINT_HEX
 	for (x = 0; x < len;)
@@ -59,6 +65,35 @@ int main(int argc, char * argv[])
 			normalized = guessmap[x] / x;
 		}
 		printf("Guess size:%d - Edit distance: %f\n", x, normalized);
+	}
+#endif
+
+
+#ifdef SET_KEY
+
+	keyString[0] = 0x55;
+	keyString[1] = 0x5f;
+	keyString[2] = 0x54;
+	keyString[3] = 0x59;
+	keyString[4] = 0x52;
+
+
+
+
+#endif
+
+
+
+
+#ifdef PRINT_DECRYPTED	
+
+	for (i = 0; i < len;)
+	{
+		for (x = 0; x < 5; ++x)
+		{
+			b64decryptStr[i++] ^= keyString[x];
+			printf("%c", b64decryptStr[i]);
+		}
 	}
 #endif
 	free(instr);
@@ -281,6 +316,9 @@ int hammingDistance(unsigned char *val1, unsigned char *val2)
 
 int guessKeysize(u_int64_t *str, int guessmap[])
 {
+
+	// To guess the key size, the function will compare characters from the
+	// hex string of KEYSIZE and determine the edit distance between them
 	int guess, lowGuess, hd, i;
 	int lowest = 0x7FFFFFFF;
 	unsigned char *val1, *val2;
@@ -292,6 +330,8 @@ int guessKeysize(u_int64_t *str, int guessmap[])
 	// Tries a series of key size guesses
 	for (guess = 2; guess < 40; ++guess)
 	{
+		// Allocates two blocks of guess size to load strings into
+		// to XOR against and determine edit distance
 		val1 = realloc(val1,sizeof(unsigned char)*guess);
 		val2 = realloc(val2,sizeof(unsigned char)*guess);
 
@@ -325,18 +365,24 @@ int guessKeysize(u_int64_t *str, int guessmap[])
 }
 
 
-void findKey(u_int64_t *str, int keySize, int len)
+void findKey(u_int64_t *str, int keySize, int len, unsigned char * keyString)
 {
 	unsigned char blockCipher[len], key = 0x1, outchar, messageTemp[len], message[len];
 	int i,x,z, f, score = 0, lowestScore = 0x80000000, threshold, block;
 	i = x = z = f = 0;
-	unsigned char keyString[5];
+
+
+
 #ifdef PRINT_SCORE
 	printf("Enter key threshold: ");
 	scanf(" %d", &threshold); 
 	printf("Enter block to analyze: ");
 	scanf(" %d", &block);
 #endif
+
+
+
+
 	// Sort into blocks of keysize
 	for (i = 0; i < len; ++z)
 	{
@@ -349,8 +395,15 @@ void findKey(u_int64_t *str, int keySize, int len)
 	
 
 	// Make single xor decrypt function here
+	// f < 5 is because I know that the best keysize guess is 5;
+	// if this were some other value, it should probably take a parameter
+	// from the guessKeySize function. 
 	for (f = 0; f < 5; ++f)
 	{
+
+		// Scores single character keys for each block in the block cipher
+		// by legible characters, lowest score gets reset for every block
+		lowestScore = 0;
 		for (key = 0x1; key < 0xFF; key++)
 		{	
 			for(i = ((len/5)*f); i < ((len/5)*(f+1)); ++i)
