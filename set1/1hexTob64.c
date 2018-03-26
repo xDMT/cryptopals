@@ -6,7 +6,7 @@
 
 int main(int argc, char * argv[])
 {
-	unsigned char key = 'A', instr[MAX_INPUT];
+	unsigned char instr[MAX_INPUT];
 	unsigned char * tempbyte = calloc(7,sizeof(unsigned char));
 	unsigned char * b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	int i, x;
