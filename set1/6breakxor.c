@@ -7,9 +7,7 @@
 #define DECODE_B64 0
 
 
-#define PRINT_DECRYPTED
-#define SET_KEY
-
+#define PRINT_HEX
 
 void initB64DecodeMap(unsigned char b64[], int guessmap[]);
 int  b64decrypt(unsigned char b64[], unsigned char * instr , u_int64_t b64decryptStr[]);
