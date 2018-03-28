@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <float.h>
 
 
 typedef unsigned char * bytePtr;
@@ -10,75 +11,58 @@ typedef unsigned char  byte;
 
 size_t b64decrypt(bytePtr b64, bytePtr instr, bytePtr b64decryptStr, size_t len);
 bytePtr loadFile(bytePtr instr, bytePtr filename);
+int hammingDistance(bytePtr val1, bytePtr val2);
 
 int main(int argc, char * argv[])
 {
+	size_t len, len2;
+	int z;
 	FILE * fp = fopen(argv[1], "r");
+
+	byte x,y,key,out;
+	bytePtr b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345679+/";
+	bytePtr scoreScale = "etaoinsrhldcumfpgwybvkxjqz ETAOINSRHLDCUMFPGWYBVKXJQZ.?!123456789";
+	
+	// Array to contain the five keysizes with the lowest hamming distance
+	bytePtr pch, guessMap[5];
+
+	u_int64_t scoreHigh = 0x7FFFFFFF, score = 0x0;
+
+
+
+
+	// File reading sequence
 	if(!fp){
 		exit(1);
 	}
+
+
 	fseek(fp, 0, SEEK_END);
-	size_t len = ftell(fp);
+	len = ftell(fp);
 	rewind(fp);
+	
+	
+	
 	bytePtr inBlock = calloc(len, sizeof(byte));
 	if(fread(inBlock, sizeof(char), len, fp) != len){
 		exit(1);
 	}
 	fclose(fp);
+	// End file read	
 
 
+
+	// Allocate space for decoded base64, for every 3 hex characters, 4 base64
+	// characters result, len2 stores exact length of outBlock
 	bytePtr outBlock = calloc((len*3)/4, sizeof(byte));
-	bytePtr b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345679+/";
-
-	size_t len2 = b64decrypt(b64, inBlock, outBlock, len);
-
-	byte x,y,key,out,keymap[5];
-	int z;
-	u_int64_t scoreHigh = 0x7FFFFFFF, score = 0x0;
-	bytePtr scoreScale = "etaoinsrhldcumfpgwybvkxjqz ETAOINSRHLDCUMFPGWYBVKXJQZ.?!123456789";
-	bytePtr pch;
-
-	for (y = 0; y < 5; ++y)
-	{
-		scoreHigh = 0x7FFFFFFF;
-		for (x = 0; x < 0xFF; ++x)
-		{
-			score = 0;
-			for(z = 0; z < (len2/5); ++z)
-			{
-				key = x;
-				out = outBlock[(z*5)+y] ^ key;
-				pch = strchr(scoreScale, out);
-				if (!pch)
-				{
-					score += 255;
-				}
-				else
-				{
-					score += pch-scoreScale;
-				}
-			}
-			if (score < scoreHigh)
-			{
-				scoreHigh = score;
-				keymap[y] = x;
-			}
-		}
-	}
+	len2 = b64decrypt(b64, inBlock, outBlock, len);
 
 
 
-	for (z = 0; z < len2; )
-	{
-		for (y = 0; y < 5; ++y, ++z)
-		{
-			outBlock[z] ^= keymap[y];
-			printf("%c",outBlock[z]);
-		}
-	}	
 
 
-	printf("%s, %d", keymap, scoreHigh);
+
+	
 
 				
 
@@ -95,10 +79,62 @@ int main(int argc, char * argv[])
 	return 0;
 }
 
+double guessKeysize(bytePtr outBlock)
+{
+	int i;
+	double lowest = DBL_MAX; 
+	double hd, guess, lowGuess;
+	
+
+	for (guess = 2; guess < 40; ++guess)
+	{
+			
+		byte val1[guess];
+		byte val2[guess];
+
+		for (i = 0; i < guess; ++i)
+		{
+			val1[i] = outBlock[i];
+			val2[i] = outBlock[i+guess];
+		}
+		hd = ((hammingDistance(val1,val2))/guess);
+		
+		
 
 
 
 
+
+
+}
+
+
+
+
+
+int hammingDistance(bytePtr val1, bytePtr val2)
+{
+	int len,i,x,hammingD = 0;
+	len = strlen(val1);
+
+	result[len];
+
+	for(i = 0; i < len; ++i)
+	{
+		result[i] = val1[i] ^ val2[i];
+	}
+
+	for (i = 0; i < len; ++i)
+	{
+		for (x = 0; x < 8; ++x)
+		{
+			m2 = result[i] & 0x1;
+			( m2 == 0x1) ? hammingD++ : (m2 = 0x0);
+			result[i] = result[i] >> 1;
+		}
+	}
+	return hammingD;
+}
 
 
 
