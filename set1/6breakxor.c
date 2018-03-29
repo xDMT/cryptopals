@@ -11,7 +11,6 @@ typedef unsigned char  byte;
 
 double guessKeysize(bytePtr outBlock);
 size_t b64decrypt(bytePtr b64, bytePtr instr, bytePtr b64decryptStr, size_t len);
-bytePtr loadFile(bytePtr instr, bytePtr filename);
 int hammingDistance(bytePtr val1, bytePtr val2);
 
 int main(int argc, char * argv[])
