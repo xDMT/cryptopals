@@ -102,11 +102,11 @@ double guessKeysize(bytePtr outBlock)
 			val1[i] = outBlock[i];
 			val2[i] = outBlock[i+(int)guess];
 		}
-		
+		i++;	
 		for (x = 0; x < guess; ++i, ++x)
 		{
-			val3[i] = outBlock[i];
-			val4[i] = outBlock[i+(int)guess];
+			val3[x] = outBlock[i];
+			val4[x] = outBlock[i+(int)guess];
 		}
 		hd += ((hammingDistance(val1,val2)));
 		hd += ((hammingDistance(val3,val4)));
