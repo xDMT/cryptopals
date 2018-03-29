@@ -9,6 +9,7 @@ typedef unsigned char  byte;
 
 
 
+double guessKeysize(bytePtr outBlock);
 size_t b64decrypt(bytePtr b64, bytePtr instr, bytePtr b64decryptStr, size_t len);
 bytePtr loadFile(bytePtr instr, bytePtr filename);
 int hammingDistance(bytePtr val1, bytePtr val2);
@@ -16,7 +17,7 @@ int hammingDistance(bytePtr val1, bytePtr val2);
 int main(int argc, char * argv[])
 {
 	size_t len, len2;
-	int z;
+	int z,i;
 	FILE * fp = fopen(argv[1], "r");
 
 	byte x,y,key,out;
@@ -58,13 +59,11 @@ int main(int argc, char * argv[])
 	len2 = b64decrypt(b64, inBlock, outBlock, len);
 
 
+	guessKeysize(outBlock);
 
 
 
 
-	
-
-				
 
 				
 
@@ -81,27 +80,45 @@ int main(int argc, char * argv[])
 
 double guessKeysize(bytePtr outBlock)
 {
-	int i;
+	int i, x;
 	double lowest = DBL_MAX; 
 	double hd, guess, lowGuess;
 	
 
 	for (guess = 2; guess < 40; ++guess)
 	{
-			
-		byte val1[guess];
-		byte val2[guess];
+		hd = 0;	
+		byte val1[(int)guess];
+		byte val2[(int)guess];
+		byte val3[(int)guess];
+		byte val4[(int)guess];
+
+		memset(val1, 0, (int)guess);
+		memset(val2, 0, (int)guess);
+		memset(val3, 0, (int)guess);
+		memset(val4, 0, (int)guess);
 
 		for (i = 0; i < guess; ++i)
 		{
 			val1[i] = outBlock[i];
-			val2[i] = outBlock[i+guess];
+			val2[i] = outBlock[i+(int)guess];
 		}
-		hd = ((hammingDistance(val1,val2))/guess);
 		
+		for (x = 0; x < guess; ++i, ++x)
+		{
+			val3[i] = outBlock[i];
+			val4[i] = outBlock[i+(int)guess];
+		}
+		hd += ((hammingDistance(val1,val2)));
+		hd += ((hammingDistance(val3,val4)));
+		hd /= 2;
+		hd /= guess;
+		printf("Guess %f - Score %.2f\n", guess, hd); 
+	}
+
 		
 
-
+	return 0;
 
 
 
@@ -117,7 +134,7 @@ int hammingDistance(bytePtr val1, bytePtr val2)
 	int len,i,x,hammingD = 0;
 	len = strlen(val1);
 
-	result[len];
+	byte result[len], m2;
 
 	for(i = 0; i < len; ++i)
 	{
