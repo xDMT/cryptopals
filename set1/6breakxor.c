@@ -4,7 +4,6 @@
 #include <float.h>
 
 
-<<<<<<< HEAD
 typedef unsigned char * bytePtr;
 typedef unsigned char  byte;
 
