@@ -74,6 +74,9 @@ int main(int argc, char * argv[])
 
 
 
+
+
+
 	return 0;
 }
 
@@ -114,8 +117,6 @@ double guessKeysize(bytePtr outBlock)
 		hd /= guess;
 		printf("Guess %f - Score %.2f\n", guess, hd); 
 	}
-
-		
 
 	return 0;
 
