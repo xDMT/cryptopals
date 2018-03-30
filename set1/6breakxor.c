@@ -4,6 +4,7 @@
 #include <float.h>
 
 
+<<<<<<< HEAD
 typedef unsigned char * bytePtr;
 typedef unsigned char  byte;
 
@@ -249,4 +250,3 @@ size_t b64decrypt(bytePtr b64, bytePtr instr, bytePtr b64decryptStr, size_t len)
 	}
 	return f;
 }
-

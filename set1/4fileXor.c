@@ -21,7 +21,7 @@ int getStringsFromFile(char *filecontents[], FILE * fp);
 
 int main(int argc, char * argv[])
 {
-	unsigned char buf1[256], outputs[8][256], decbuf[3], key = 0x1, message[256];
+	unsigned char buf1[256], decbuf[3], key = 0, message[256];
 	long int hexDecode[256], out;
 	int i,x,z,r,f,score,maxScore;
 	size_t lenb1;
