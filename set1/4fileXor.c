@@ -54,7 +54,6 @@ int main(int argc, char * argv[])
 		lenb1 = strlen(buf1);
 		memset(hexDecode, '\0', 256);
 		memset(tmessage, '\0', 256);
-
 			
 
 			// First decode into hex and store in integer array
@@ -72,8 +71,8 @@ int main(int argc, char * argv[])
 			// Xor all key values and score
 			for (key = 0; key < 0xFF; ++key)
 			{
-				score = 0;
-				for (r = 0; hexDecode[r] != '\0'; ++r)
+				(lenb1/2 != 0) ? (score = 0) : (score = INT_MAX);
+				for (r = 0; r < lenb1/2; ++r)
 				{
 					out = hexDecode[r] ^ key;
 					pch = strchr(freq, out);
@@ -94,8 +93,8 @@ int main(int argc, char * argv[])
 				}
 			}
 	}
-	printf("%s", message);
 
+		printf("%s", message);
 
 
 
