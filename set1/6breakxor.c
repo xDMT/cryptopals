@@ -205,8 +205,7 @@ void decryptMessageAndFindKey(bytePtr outBlock, int trySize[], bytePtr scoreScal
 double guessKeysize(bytePtr outBlock, int trySize[])
 {
 	int i, x, z = 0;
-	double lowest = DBL_MAX; 
-	double hd, guess, lowGuess;
+	double hd, guess;
 	
 
 	for (guess = 2; guess < 40; ++guess)
