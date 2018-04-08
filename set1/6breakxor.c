@@ -205,8 +205,7 @@ void decryptMessageAndFindKey(bytePtr outBlock, int trySize[], bytePtr scoreScal
 double guessKeysize(bytePtr outBlock, int trySize[])
 {
 	int i, x, z = 0;
-	double lowest = DBL_MAX; 
-	double hd, guess, lowGuess;
+	double hd, guess;
 	
 
 	for (guess = 2; guess < 40; ++guess)
@@ -355,42 +354,27 @@ size_t b64decrypt(bytePtr b64, bytePtr instr, bytePtr b64decryptStr, size_t len)
 			hexOut = hexOut >> 40;
 			b64decryptStr[f++] = hexOut;
 		
-#ifdef DEBUG
-			printf("Storing number %d - Hex value: %x\n", hexOut, hexOut);
-#endif
+
 			hexOut = (b64Read & 0b0000000000000000000000001111111100000000000000000000000000000000);
 			hexOut = hexOut >> 32;
 			b64decryptStr[f++] = hexOut;
-#ifdef DEBUG
-			printf("Storing number %d - Hex value: %x\n", hexOut, hexOut);
-#endif
+
 
 			hexOut = (b64Read & 0b0000000000000000000000000000000011111111000000000000000000000000);
 			hexOut = hexOut >> 24;
 			b64decryptStr[f++] = hexOut;
-#ifdef DEBUG
-			printf("Storing number %d - Hex value: %x\n", hexOut, hexOut);
-#endif
 
 			hexOut = (b64Read & 0b0000000000000000000000000000000000000000111111110000000000000000);
 			hexOut = hexOut >> 16;
 			b64decryptStr[f++] = hexOut;
-#ifdef DEBUG
-			printf("Storing number %d - Hex value: %x\n", hexOut, hexOut);
-#endif
 
 			hexOut = (b64Read & 0b0000000000000000000000000000000000000000000000001111111100000000);
 			hexOut = hexOut >> 8;
 			b64decryptStr[f++] = hexOut;
-#ifdef DEBUG
-			printf("Storing number %d - Hex value: %x\n", hexOut, hexOut);
-#endif
+
 
 			hexOut = (b64Read & 0b0000000000000000000000000000000000000000000000000000000011111111);
 			b64decryptStr[f++] = hexOut;
-#ifdef DEBUG
-			printf("Storing number %d - Hex value: %x\n", hexOut, hexOut);
-#endif
 
 	}
 	return f;
