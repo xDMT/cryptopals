@@ -20,7 +20,7 @@ int main(int argc, char * argv[])
 {
 	FILE * fp = fopen(argv[1], "r");
 	size_t len;
-        int ret;
+        int ret,i;
 
 
 	// File reading sequence
@@ -71,15 +71,25 @@ int main(int argc, char * argv[])
             exit(1);
         }
 
-        // So this function only decrypts blocks of 16 bytes at a time,
-        // which means ill have to implement some sort of loop through the block
-        // to copy 16 bytes worth of data until the end of the block
-        mbedtls_aes_crypt_ecb(&ctx, MBEDTLS_AES_DECRYPT, inBlock, outBlock);
+
+
+	// Because the aes_cryp_ecb() function only works on single blocks
+	// of 16 bytes, we must iterate 16 bytes at a time through the 
+	// cipher and append the decrypted text to the outBlock pointer
+	// for each iteration
+	
+	byte blockBufferIn[16];
+	byte blockBufferOut[16];        
+	for (i = 0; i < len; i += 16)
+	{
+		memcpy(blockBufferIn, inBlock+i, 16); 
+		mbedtls_aes_crypt_ecb(&ctx, MBEDTLS_AES_DECRYPT, blockBufferIn, blockBufferOut);
+		memcpy(outBlock+i, blockBufferOut, 16);
+	}
 
 
 
-        // Otherwise the program works, it just for now only decrypts the 
-        // first 16 blocks of the file
+
 	printf("%s", outBlock);	
 
 
