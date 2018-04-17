@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
-#include <openssl/aes.h>
 
+
+#include <mbedtls/aes.h>
+    
 
 
 typedef unsigned char * bytePtr;
@@ -18,6 +20,9 @@ int main(int argc, char * argv[])
 {
 	FILE * fp = fopen(argv[1], "r");
 	size_t len;
+        int ret;
+
+
 	// File reading sequence
 	if(!fp){
 		exit(1);
@@ -39,10 +44,42 @@ int main(int argc, char * argv[])
 
 
 
+
+
+
+
 		
 	bytePtr outBlock = calloc(len, sizeof(byte));
-	AES_decrypt(inBlock, outBlock, "YELLOW SUBMARINE");
+        // Define context structure for AES context 
+        // Initialize AES context specifying rounds,
+        // rounds for 128 bit keys is 10
+        
+        mbedtls_aes_context ctx;
+        ctx.nr = 10;
+        mbedtls_aes_init(&ctx);
 
+
+
+        // Function to set th AES key, uses the context object
+        // and takes the key and the number of bits in the key as the
+        // second and third arguments
+        ret = mbedtls_aes_setkey_dec(&ctx, "YELLOW SUBMARINE", 128);
+        if (ret)
+        {
+            // Should return 0 on success
+            printf("Error occurred");
+            exit(1);
+        }
+
+        // So this function only decrypts blocks of 16 bytes at a time,
+        // which means ill have to implement some sort of loop through the block
+        // to copy 16 bytes worth of data until the end of the block
+        mbedtls_aes_crypt_ecb(&ctx, MBEDTLS_AES_DECRYPT, inBlock, outBlock);
+
+
+
+        // Otherwise the program works, it just for now only decrypts the 
+        // first 16 blocks of the file
 	printf("%s", outBlock);	
 
 
@@ -53,8 +90,9 @@ int main(int argc, char * argv[])
 
 
 
-
-
+        // Remember the file needs to be base64 decoded first.
+        // The code to do that is here, but just in case im going to
+        // first use the openssl command line tool to accomplish that
 
 
 
