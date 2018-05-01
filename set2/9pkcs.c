@@ -57,7 +57,7 @@ int main(int argc, char * argv[])
     // Append bytes to end of original file
     for (i = len; i < (len+padding); ++i)
     {
-        paddedMsg[i] = '\x04';
+        paddedMsg[i] = (unsigned char)padding;
     }
     fclose(fp);
 
