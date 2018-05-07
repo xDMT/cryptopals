@@ -83,7 +83,7 @@ int main(int argc, char * argv[])
 
 
             
-    bytePtr outBlock = calloc(len, sizeof(byte));
+    bytePtr outBlock = calloc(len+1, sizeof(byte));
     // Define context structure for AES context 
     // Initialize AES context specifying rounds,
     // rounds for 128 bit keys is 10
@@ -161,7 +161,7 @@ int main(int argc, char * argv[])
     system("sleep 3");
 
 
-
+    // Encrypt or decrypt process
     for (i = 0; i < len; i += 16)
     {
             memcpy(blockBufferIn, inBlock+i, 16); 
@@ -175,7 +175,10 @@ int main(int argc, char * argv[])
             }
             memcpy(outBlock+i, blockBufferOut, 16);
     }
-    
+   
+    outBlock[len] = '\0';
+
+    // Output message 
     if (!strcmp(option, "-d"))
     {
         printf("[+] Succussfully decrypted %d bytes\n", len);
@@ -185,12 +188,29 @@ int main(int argc, char * argv[])
         printf("[+] Succussfully encrypted %d bytes\n", len);
     }
 
+    int padbool = 0;
+    unsigned char a,b;
+    // Check for padding sequence
+    if (outBlock[len-1] == outBlock [len-2])
+    {
+        a = outBlock[len-1];
+        for (i = len, b = '\x00'; b < a+1; ++b, --i)
+        {
+            outBlock[len] = '\0';
+        }
+        len = len-(int)a;
+        padbool = 1;
+    }
+
 
     FILE *fpWrite = fopen(argv[1], "w");
     fwrite(outBlock, 1, len, fpWrite);
     fclose(fpWrite);
 
-
+    if (padbool)
+    {
+        printf("[+] Padded message detected, sucessfully stripped %d padded bytes\n", a);
+    }
     printf("[+] Succussfully wrote %d bytes to %s\n", len, argv[1]);
 
 
@@ -253,7 +273,7 @@ void padBlock(char * filename)
     // Append bytes to end of original file
     for (i = len; i < (len+padding); ++i)
     {
-        paddedMsg[i] = '\x04';
+        paddedMsg[i] = (unsigned char) padding;
     }
     fclose(fp);
 
