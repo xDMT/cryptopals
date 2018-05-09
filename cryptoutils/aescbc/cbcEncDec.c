@@ -100,7 +100,11 @@ int main(int argc, char * argv[])
     fseek(fp, 0, SEEK_END);
     len = ftell(fp);
     rewind(fp);
-    len += IV_LENGTH; 
+
+   // if(!strcmp(option, "-e"))
+   // {
+        len += IV_LENGTH;
+   // }
     
     // Start file read
     bytePtr inBlock = calloc(len, sizeof(byte));
@@ -118,7 +122,7 @@ int main(int argc, char * argv[])
 
 
             
-    bytePtr outBlock = calloc(len+1+IV_LENGTH, sizeof(byte));
+    bytePtr outBlock = calloc(len+1, sizeof(byte));
     // Define context structure for AES context 
     // Initialize AES context specifying rounds,
     // rounds for 128 bit keys is 10
@@ -247,8 +251,15 @@ int main(int argc, char * argv[])
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////yy
     // Encrypt or decrypt process
-    for (i = 0; i < len; i += 16)
+    for (i = 0; i < len-IV_LENGTH; i += 16)
     {
+
+            if (!strcmp(option,"-d"))
+            {
+                // Pass over decrypting the IV 
+                i += 16;
+            }
+            
             // Copy 16 bytes from the input to the bufer
             memcpy(blockBufferIn, inBlock+i, 16);
 
@@ -285,9 +296,15 @@ int main(int argc, char * argv[])
             
             
             
-            
-            // Copy the cipher text produced into IV
-            memcpy(outBlock+i+IV_LENGTH, blockBufferOut, 16);
+            if (!strcmp(option,"-d"))
+            {
+                memcpy(outBlock+i-IV_LENGTH, blockBufferOut, 16);
+            }
+            else
+            {
+                // Copy the cipher text produced into IV
+                memcpy(outBlock+i+IV_LENGTH, blockBufferOut, 16);
+            }
     }
     //
     //////////////////////////////////////////////////////////////////////////////////////////////////////yy
@@ -335,7 +352,14 @@ int main(int argc, char * argv[])
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////yy
     FILE *fpWrite = fopen(argv[1], "w");
-    fwrite(outBlock, 1, len, fpWrite);
+    if (!strcmp(option, "-d"))
+    {
+        fwrite(outBlock, 1, len-32, fpWrite);
+    }
+    else
+    {
+        fwrite(outBlock, 1, len, fpWrite);
+    }
     fclose(fpWrite);
 
     if (padbool)
