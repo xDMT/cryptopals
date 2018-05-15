@@ -1,0 +1,3 @@
+Need to debug executable to see why outputs are the same
+Must not be generating a random key
+Also check the value of ecb vs cbc

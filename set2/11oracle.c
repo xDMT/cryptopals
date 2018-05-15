@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
-#include <time.h>
+
 
 #include <mbedtls/aes.h>
     
@@ -17,44 +17,74 @@ void padBlock(char * filename);
 
 
 
-/*
- * TODO: So instead of doing file level encryption like the other
- *  chllenges in the past, Im going to have the input come from stdin
- *
- *  So this way, simple input can go in, the output will go to stdout,
- *  and the output will also be anaylzed by an seperate function
- *  to detect ECB or CBC 
- *
- *  Perfectly honest im not sure how im going to go about doing that
- *  detection, since the only give away factor I understand so far about
- *  ECB is repeating byte blocks. That isnt going to work with smaller inputs
- *
- *  Im wondering if its even possible to figure that out for small inputs?
- *
- *  Definitely going to have to research that
- */
-
-
-
 
 
 
 int main(int argc, char * argv[])
 {
-    
 
-    // Seeding the randomizer
-    srand(time(NULL));
     FILE * fp = fopen(argv[1], "r");
     size_t len;
     int ret,i;
-    
-    
+    char option[3], key[16];
+    option[3] = '\0';
+    strcpy(option, argv[2]);
+    if (argc == 4)
+    {
+        if (strlen(argv[3]) != 16)
+        {
+            printf("\n\nKey must be 16 bytes");
+            exit(1);
+        }
+    }
 
-    padBlock(argv[1]);
+    if (!strcmp(option, "-e"))
+    {
+        padBlock(argv[1]);
+    }
+    else
+    {
+        // Turning off decrypt mode
+        exit(0);
+    }
     
+    if ((argc < 3) || (argc > 4))
+    {
+        exit(1);
+    }
+
+
+        
+
+
+
+    // File reading sequence
+    if(!fp){
+            exit(1);
+    }
+    // File length sequence
+    fseek(fp, 0, SEEK_END);
+    len = ftell(fp);
+    rewind(fp);
+    
+    
+    // Start file read
+    bytePtr inBlock = calloc(len, sizeof(byte));
+    if(fread(inBlock, sizeof(char), len, fp) != len){
+            exit(1);
+    }
+    fclose(fp);
+    // End file read
+    //
+
+
+
+
+
+
 
             
+    bytePtr outBlock = calloc(len+1, sizeof(byte));
     // Define context structure for AES context 
     // Initialize AES context specifying rounds,
     // rounds for 128 bit keys is 10
@@ -69,21 +99,65 @@ int main(int argc, char * argv[])
 
 
 
-    byte key[16];
+
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////yy
-    // Function to set th AES key, 
-    // Here were going to generate a random 16 byte key 
-    // Removing the decryption elements since this is an encryption only challenge
-
-    // Generate random key
-    //
-    for (i = 0; i < 16; ++i)
+    // Function to set th AES key, uses the context object
+    // and takes the key and the number of bits in the key as the
+    // second and third arguments
+    if(!strcmp(option, "-d")) 
     {
-        key[i] = (rand() % 255);
-    }
+        // Instead of modifying this code heavily..
+        // im just going to temporarily disable the decrypt mode
+        if (argc == 3)
+        {
 
-    ret = mbedtls_aes_setkey_enc(&ctx, argv[3], 128);
+            printf("\n[+] Using default decryption key \"YELLOW SUBMARINE\"\n");
+            ret = mbedtls_aes_setkey_dec(&ctx, "YELLOW SUBMARINE", 128);
+        }
+        else
+        {
+            if (strlen(argv[3]) != 16)
+            {
+                printf("\n[-] AES Requires 128 bit key\n");
+                printf("[-] Exiting..\n\n");
+            }
+            else
+            {
+                ret = mbedtls_aes_setkey_dec(&ctx, argv[3], 128);
+            }
+        }
+
+    }
+    else
+    {
+        if (argc == 3)
+        {
+            // And instead of using a default key, were going to generate a
+            // random AES key
+            printf("\n[+] Generating random 128 bit AES key");
+
+
+            for (i = 0; i < 16; ++i)
+            {
+                key[i] = (rand() % 255);
+            }
+
+            ret = mbedtls_aes_setkey_enc(&ctx, key, 128);
+        }
+        else
+        {
+            if (strlen(argv[3]) != 16)
+            {
+                printf("\n[-] AES Requires 128 bit key\n");
+                printf("[-] Exiting..\n\n");
+            }
+            else
+            {
+                ret = mbedtls_aes_setkey_enc(&ctx, argv[3], 128);
+            }
+        }
+    }
        
     if (ret)
     {
@@ -108,24 +182,22 @@ int main(int argc, char * argv[])
     
     byte blockBufferIn[16];
     byte blockBufferOut[16];        
-    
+    byte IV[16];
 
     // Apply IV for CBC mode
-    byte IV[16];
+    // Generate random IV blocl
     for (i = 0; i < 16; ++i)
     {
-        IV[i] = '\x00';
+        IV[i] = (rand() % 255);
     }
-    
-
     int r;
+    int ecb;
 
 
 
 
-
-
-
+    // Randomly choose between ECB mode and CBC mode
+    ecb = (rand() % 1);
     //////////////////////////////////////////////////////////////////////////////////////////////////////yy
     // Encrypt or decrypt process
     for (i = 0; i < len; i += 16)
@@ -140,7 +212,7 @@ int main(int argc, char * argv[])
             if(!strcmp(option, "-d")) 
             {
 
-
+                
                 mbedtls_aes_crypt_ecb(&ctx, MBEDTLS_AES_DECRYPT, blockBufferIn, blockBufferOut);
                 for (r = 0; r < 16; ++r)
                 {
@@ -155,13 +227,21 @@ int main(int argc, char * argv[])
             // For encryption
             else if(!strcmp(option, "-e")) 
             {
-                for (r = 0; r < 16; ++r)
+                if (ecb)
                 {
-                    blockBufferIn[r] ^= IV[r];
-                }  
-                // XOR with the IV
-                mbedtls_aes_crypt_ecb(&ctx, MBEDTLS_AES_ENCRYPT, blockBufferIn, blockBufferOut);
-                memcpy(IV, blockBufferOut, 16);
+
+                    mbedtls_aes_crypt_ecb(&ctx, MBEDTLS_AES_ENCRYPT, blockBufferIn, blockBufferOut);
+                }
+                else
+                {
+                    for (r = 0; r < 16; ++r)
+                    {
+                        blockBufferIn[r] ^= IV[r];
+                    }  
+                    // XOR with the IV
+                    mbedtls_aes_crypt_ecb(&ctx, MBEDTLS_AES_ENCRYPT, blockBufferIn, blockBufferOut);
+                    memcpy(IV, blockBufferOut, 16);
+                }
             }
             
             
