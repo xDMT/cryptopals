@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
-
+#include <time.h>
 
 #include <mbedtls/aes.h>
     
@@ -22,6 +22,7 @@ void padBlock(char * filename);
 
 int main(int argc, char * argv[])
 {
+    srand(time(NULL));
 
     FILE * fp = fopen(argv[1], "r");
     size_t len;
@@ -29,6 +30,14 @@ int main(int argc, char * argv[])
     char option[3], key[16];
     option[3] = '\0';
     strcpy(option, argv[2]);
+
+
+
+
+
+    // Argument checking
+    // ///////////////////////////////////////////////////////
+    //
     if (argc == 4)
     {
         if (strlen(argv[3]) != 16)
@@ -53,8 +62,11 @@ int main(int argc, char * argv[])
         exit(1);
     }
 
+    // 
+    // ///////////////////////////////////////////////////////
+    //
 
-        
+    exit(0);        
 
 
 
@@ -66,20 +78,20 @@ int main(int argc, char * argv[])
     fseek(fp, 0, SEEK_END);
     len = ftell(fp);
     rewind(fp);
-    
+
+
     
     // Start file read
     bytePtr inBlock = calloc(len, sizeof(byte));
-    if(fread(inBlock, sizeof(char), len, fp) != len){
-            exit(1);
-    }
+    fread(inBlock, sizeof(char), len, fp);
     fclose(fp);
     // End file read
     //
 
 
 
-
+    ////////////////
+    // Now append bytes
 
 
 
@@ -103,8 +115,8 @@ int main(int argc, char * argv[])
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////yy
     // Function to set th AES key, uses the context object
-    // and takes the key and the number of bits in the key as the
-    // second and third arguments
+    // 
+
     if(!strcmp(option, "-d")) 
     {
         // Instead of modifying this code heavily..
@@ -174,11 +186,9 @@ int main(int argc, char * argv[])
 
 
 
-
-    // Because the aes_cryp_ecb() function only works on single blocks
-    // of 16 bytes, we must iterate 16 bytes at a time through the 
-    // cipher and append the decrypted text to the outBlock pointer
-    // for each iteration
+    // Set up in/out buffers and IV for 
+    // CBC (random)
+    ///////////////////////////////////////////////////////////////////////////////// 
     
     byte blockBufferIn[16];
     byte blockBufferOut[16];        
@@ -194,11 +204,22 @@ int main(int argc, char * argv[])
     int ecb;
 
 
+    //
+    //
+    ///////////////////////////////////////////////////////////////////////////////// 
 
 
-    // Randomly choose between ECB mode and CBC mode
-    ecb = (rand() % 1);
-    ecb ? printf("CBC\n") : printf("ECB");  
+
+
+
+
+
+
+    // Randomly choose between ECB mode and CBC mode    
+    for (r = 0; r < 50; ++r)
+    {
+        ecb = (rand() % 2);
+    }
     //////////////////////////////////////////////////////////////////////////////////////////////////////yy
     // Encrypt or decrypt process
     for (i = 0; i < len; i += 16)
@@ -228,7 +249,7 @@ int main(int argc, char * argv[])
             // For encryption
             else if(!strcmp(option, "-e")) 
             {
-                if (ecb)
+                if (ecb == 1)
                 {
 
                     mbedtls_aes_crypt_ecb(&ctx, MBEDTLS_AES_ENCRYPT, blockBufferIn, blockBufferOut);
@@ -247,7 +268,7 @@ int main(int argc, char * argv[])
             
             
             
-            
+       
             // Copy the cipher text produced into IV
             memcpy(outBlock+i, blockBufferOut, 16);
     }
@@ -339,6 +360,25 @@ void padBlock(char * filename)
     len = ftell(fp);
     rewind(fp);
     
+    
+    // Append bytes before and after plaintext (count 
+    // chosen randomly)
+    //
+    //////////////////////////////////////////////////////////////////////////
+    
+    int appendCount;
+    do
+    {
+         appendCount = (rand() % 11);   
+    } while (appendCount < 5);
+
+
+    // Add appended bytes to new buffer length
+    len += (appendCount*2);
+
+
+
+
     if (len % blockSize == 0)
     {
         return;
@@ -347,7 +387,7 @@ void padBlock(char * filename)
     // from the largest nearest blockSize multiple
     while (blockSize < len)
     {
-        blockSize += blockSize;
+        blockSize += 16;
     }
     padding = blockSize - len;
 
@@ -355,10 +395,18 @@ void padBlock(char * filename)
     // message
     unsigned char paddedMsg[len+padding];
 
+    for (i = 0; i < appendCount; ++i)
+    {
+        paddedMsg[i] = 'A';
+    }
 
     // Read bytes into buffer and begin padding
-    fread(paddedMsg, 1, len, fp);
+    fread(paddedMsg+appendCount, 1, len, fp);
 
+    for (i = len-appendCount-1; i < len; ++i)
+    {
+        paddedMsg[i] = 'A';
+    }
 
     // Append bytes to end of original file
     for (i = len; i < (len+padding); ++i)

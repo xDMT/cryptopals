@@ -41,7 +41,7 @@ int main(int argc, char * argv[])
     // from the largest nearest blockSize multiple
     while (blockSize < len)
     {
-        blockSize += blockSize;
+        blockSize += 16;
     }
     padding = blockSize - len;
 
