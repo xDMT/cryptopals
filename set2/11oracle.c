@@ -14,6 +14,7 @@ typedef unsigned char  byte;
 
 
 void padBlock(char * filename);
+int ecbDetect(char * file);
 
 
 
@@ -66,7 +67,6 @@ int main(int argc, char * argv[])
     // ///////////////////////////////////////////////////////
     //
 
-    exit(0);        
 
 
 
@@ -147,7 +147,7 @@ int main(int argc, char * argv[])
         {
             // And instead of using a default key, were going to generate a
             // random AES key
-            printf("\n[+] Generating random 128 bit AES key");
+            printf("\n[+] Generating random 128 bit AES key\n");
 
 
             for (i = 0; i < 16; ++i)
@@ -215,11 +215,14 @@ int main(int argc, char * argv[])
 
 
 
-    // Randomly choose between ECB mode and CBC mode    
+    // Randomly choose between ECB mode and CBC mode
+    // Give some good iterations to make sure its random
     for (r = 0; r < 50; ++r)
     {
         ecb = (rand() % 2);
     }
+
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////yy
     // Encrypt or decrypt process
     for (i = 0; i < len; i += 16)
@@ -328,7 +331,31 @@ int main(int argc, char * argv[])
     printf("[+] Succussfully wrote %d bytes to %s\n", len, argv[1]);
 
 
+    system("sleep 1");
+    printf("\n\n\n[+] Detecting cipher mode...\n");
+    system("sleep 4");
     
+    if ( ecbDetect(argv[1]))
+    {
+        printf("[+] ECB mode detected \n\n");
+        
+    }
+    else
+    { 
+        printf("[+] CBC mode detected \n\n");
+    }
+    if (ecb == 1)
+    {
+        system("sleep 2");
+        printf("[+] Actual mode used: ECB\n");
+    }
+    else
+    {
+
+        system("sleep 2");
+        printf("[+] Actual mode used: CBC\n");
+    }
+
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////yy
 
@@ -435,9 +462,63 @@ void padBlock(char * filename)
 
 
 
+    
+
+
+
+
 
 
 
 
     return ;
 }
+
+
+int ecbDetect(char * file)
+{
+
+    FILE * fp = fopen(file, "r");
+    char * line = NULL;
+    size_t len;
+    int i, f, z = 0, ret; 
+
+
+    while (getline(&line, &len, fp) != -1)
+    {
+
+        z++;
+        // Remember space for the null terminator!!
+        byte buffer1[17], buffer2[17];
+        buffer1[16] = '\0';
+        buffer2[16] = '\0';
+
+
+        // Compare blocks 
+        for (i = 0; i < len-32; i += 16)
+        {
+            memcpy(buffer1, line+i, 16);
+
+            // Second block starts 1 block past comparison
+            // block, position 'i'
+            for (f = 16; f+i < len; f += 16)
+            {
+
+                memcpy(buffer2, line+i+f, 16);
+                
+                // On 0 return value, blocks are equal
+                // indicating ecbECB mode
+                if (!strcmp(buffer1,buffer2))
+                {
+
+                    printf("\n\n\nLine %d ECB Mode Detected\n", z, line);
+                    printf("Repeated byte block #%d: %s\n", (i/16)+1, buffer1);
+                    printf("Repeated byte block #%d: %s\n", ((f+i)/16)+1, buffer2);
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
