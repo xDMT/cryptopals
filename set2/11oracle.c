@@ -222,6 +222,11 @@ int main(int argc, char * argv[])
         ecb = (rand() % 2);
     }
 
+    
+    // Debugging CBC mode detection
+    ecb = 0;
+
+
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////yy
     // Encrypt or decrypt process
