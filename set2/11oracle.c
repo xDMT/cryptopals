@@ -198,6 +198,7 @@ int main(int argc, char * argv[])
 
     // Randomly choose between ECB mode and CBC mode
     ecb = (rand() % 1);
+    ecb ? printf("CBC\n") : printf("ECB");  
     //////////////////////////////////////////////////////////////////////////////////////////////////////yy
     // Encrypt or decrypt process
     for (i = 0; i < len; i += 16)
