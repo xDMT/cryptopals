@@ -223,8 +223,6 @@ int main(int argc, char * argv[])
     }
 
     
-    // Debugging CBC mode detection
-    ecb = 0;
 
 
 
@@ -486,7 +484,7 @@ int ecbDetect(char * file)
     FILE * fp = fopen(file, "r");
     char * line = NULL;
     size_t len;
-    int i, f, z = 0, ret; 
+    int i, f, z = 0, ret, b, nnull;
 
 
     while (getline(&line, &len, fp) != -1)
@@ -497,7 +495,7 @@ int ecbDetect(char * file)
         byte buffer1[17], buffer2[17];
         buffer1[16] = '\0';
         buffer2[16] = '\0';
-
+        nnull = 0;
 
         // Compare blocks 
         for (i = 0; i < len-32; i += 16)
@@ -515,11 +513,21 @@ int ecbDetect(char * file)
                 // indicating ecbECB mode
                 if (!strcmp(buffer1,buffer2))
                 {
-
-                    printf("\n\n\nLine %d ECB Mode Detected\n", z, line);
-                    printf("Repeated byte block #%d: %s\n", (i/16)+1, buffer1);
-                    printf("Repeated byte block #%d: %s\n", ((f+i)/16)+1, buffer2);
-                    return 1;
+                    for (b = 0; b < 17; ++b)
+                    {
+                        if (buffer1[b] != '\0')
+                        {
+                            nnull = 1;
+                            break;
+                        }
+                    }
+                    if (nnull == 1)
+                    {
+                        printf("\n\n\nLine %d ECB Mode Detected\n", z, line);
+                        printf("Repeated byte block #%d: %s\n", (i/16)+1, buffer1);
+                        printf("Repeated byte block #%d: %s\n", ((f+i)/16)+1, buffer2);
+                        return 1;
+                    }
                 }
             }
         }
