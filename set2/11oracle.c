@@ -214,7 +214,6 @@ int main(int argc, char * argv[])
 
 
 
-
     // Randomly choose between ECB mode and CBC mode
     // Give some good iterations to make sure its random
     for (r = 0; r < 50; ++r)
@@ -501,6 +500,7 @@ int ecbDetect(char * file)
         for (i = 0; i < len-32; i += 16)
         {
             memcpy(buffer1, line+i, 16);
+            nnull = 0;
 
             // Second block starts 1 block past comparison
             // block, position 'i'
