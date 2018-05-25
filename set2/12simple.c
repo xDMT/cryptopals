@@ -219,10 +219,10 @@ int main(int argc, char * argv[])
 size_t b64decrypt(unsigned char * b64, unsigned char * instr, unsigned char * b64decryptStr)
 {
 
-	int i, x, z, f;
+	int i, x, z, f,s,b;
 	unsigned char * tempbyte = calloc(9, sizeof(unsigned char));
 	unsigned char * pch;
-	u_int64_t b64Read, out, hexOut;
+	u_int64_t b64Read, out, hexOut, andr;
         size_t len = strlen(instr);	
 
 
@@ -247,10 +247,22 @@ size_t b64decrypt(unsigned char * b64, unsigned char * instr, unsigned char * b6
 				b64Read = b64Read << x;
 			}
 		}
-		
+
+                        // Refactored base64 decode
+	                for (s = 40, andr = 0xFF0000000000; s >= 0; s -= 8)
+                        {
+                            hexOut = (b64Read & andr);
+                            hexOut = hexOut >> s;
+                            b64decryptStr[f++] = hexOut;
+                            andr = andr >> 8;
+                        }
+
+
+// A look at my old base64 decoding function just for lelz.. Growth 
+/*
 			hexOut = (b64Read & 0b0000000000000000111111110000000000000000000000000000000000000000);
 			hexOut = hexOut >> 40;
-			b64decryptStr[f++] = hexOut;
+			b64decryptSt[f++] = hexOut;
 		
 
 			hexOut = (b64Read & 0b0000000000000000000000001111111100000000000000000000000000000000);
@@ -273,6 +285,7 @@ size_t b64decrypt(unsigned char * b64, unsigned char * instr, unsigned char * b6
 
 			hexOut = (b64Read & 0b0000000000000000000000000000000000000000000000000000000011111111);
 			b64decryptStr[f++] = hexOut;
+*/
 
 	}
 	return f;
