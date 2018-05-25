@@ -42,10 +42,10 @@ int main(int argc, char * argv[])
 
 
     // Load base64 decoded string into strAppendDecode
-    unsigned char * strAppendDecoded = calloc(i, sizeof(unsigned char));
+    unsigned char * strAppendDecoded = calloc(i+1, sizeof(unsigned char));
     memcpy(strAppendDecoded, initialBufb64, i);
     free(initialBufb64);
-
+    strAppendDecoded[i] = '\0';
 
     // Malloc a ton of bytes for initialize buffer, get length, malloc
     // new buffer, memcpy by len then delete other buffer
@@ -53,7 +53,7 @@ int main(int argc, char * argv[])
     while (1)
     {
         // Prompt for input
-        unsigned char * initialBuf = malloc(10000);
+        unsigned char initialBuf[10000];
         printf(">>");
         
         i = 0;
@@ -61,20 +61,63 @@ int main(int argc, char * argv[])
         {
             initialBuf[i++] = c;
         }
-        i += strlen(strAppendDecoded); 
         len = i;
+        i = strlen(strAppendDecoded); 
 
         // New buffer for size 
-        unsigned char * inBlock = calloc(i+2 , sizeof(unsigned char));
+        unsigned char inBlock[i+len+1];
 
-        memcpy(inBlock, strAppendDecoded,strlen(strAppendDecoded));
-        memcpy(inBlock+strlen(strAppendDecoded), initialBuf,i-strlen(strAppendDecoded));
+        memcpy(inBlock, initialBuf, len);
+        memcpy(inBlock+len, strAppendDecoded, i);
+        
+        /////////////////////////////
+        //pad here
 
-        inBlock = padBlock(inBlock);
+        if (len > 16)
+        {
+
+            int blockSize = 16, i;
+
+            int len = strlen(initialBuf);
+            if (len % blockSize == 0)
+            {
+                break;
+            }  
+            // Determine padding amount by subtracting length
+            // from the largest nearest blockSize multiple
+            while (blockSize < len)
+            {
+                blockSize += 16;
+            }
+            int padding = blockSize - len;
+
+            // Create buffer with proper length for padded
+            // message
+            unsigned char * paddedMsg = malloc(len+padding);
 
 
-        free(initialBuf); 
-        unsigned char * outBlock = calloc(i, sizeof(unsigned char));
+            // Read bytes into buffer and begin padding
+
+            memcpy(paddedMsg, initialBuf, len);
+            // Append bytes to end of original file
+            for (i = len; i < (len+padding); ++i)
+            {
+                paddedMsg[i] = (unsigned char) padding;
+            }
+            memcpy(initialBuf, paddedMsg, len+padding);
+            free(paddedMsg);
+        }
+
+
+
+
+
+
+
+
+
+        len += i+16;
+        unsigned char  outBlock[len];
 
 
 
@@ -103,7 +146,7 @@ int main(int argc, char * argv[])
         }
 
 
-
+        
         // Because the aes_cryp_ecb() function only works on single blocks
         // of 16 bytes, we must iterate 16 bytes at a time through the 
         // cipher and append the decrypted text to the outBlock pointer
@@ -119,13 +162,18 @@ int main(int argc, char * argv[])
         }
 
 
+        int z, r = 0;
+        for (i = 0; r < len; ++i)
+        {
+            printf("Block %d:", i);
+            for (z = 0; z < 16; ++z,++r)
+            {
+            printf("%x", outBlock[r]);    
+            }
+            printf("\n");
+        }
 
 
-        printf("%x", outBlock);	
-
-
-        free(inBlock);
-        free(outBlock);
     } 
 
 
@@ -212,48 +260,6 @@ size_t b64decrypt(unsigned char * b64, unsigned char * instr, unsigned char * b6
 
 
 
-
-
-
-
-
-
-unsigned char * padBlock(unsigned char * input)
-{
-
-
-    int blockSize = 16, i;
-
-    int len = strlen(input);
-    if (len % blockSize == 0)
-    {
-        return NULL;
-    }  
-    // Determine padding amount by subtracting length
-    // from the largest nearest blockSize multiple
-    while (blockSize < len)
-    {
-        blockSize += 16;
-    }
-    int padding = blockSize - len;
-
-    // Create buffer with proper length for padded
-    // message
-    unsigned char * paddedMsg = malloc(len+padding);
-
-
-    // Read bytes into buffer and begin padding
-
-
-    // Append bytes to end of original file
-    for (i = len; i < (len+padding); ++i)
-    {
-        paddedMsg[i] = (unsigned char) padding;
-    }
-
-
-    return paddedMsg;
-}
 
 
 
