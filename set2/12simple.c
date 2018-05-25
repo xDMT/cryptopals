@@ -7,7 +7,7 @@
 
 
 #include <mbedtls/aes.h>
-    
+#define BUF_LEN 10000 
 
 
 
@@ -37,7 +37,7 @@ int main(int argc, char * argv[])
 
     // Unknown string
     unsigned char * strAppend = "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK";
-    unsigned char * initialBufb64 = malloc(10000);
+    unsigned char * initialBufb64 = malloc(BUF_LEN);
     i = b64decrypt(b64, strAppend, initialBufb64);
 
 
@@ -49,11 +49,12 @@ int main(int argc, char * argv[])
 
     // Malloc a ton of bytes for initialize buffer, get length, malloc
     // new buffer, memcpy by len then delete other buffer
-
+    unsigned char reuse[BUF_LEN];
+    int reuselen, loopcount = 0;
     while (1)
     {
         // Prompt for input
-        unsigned char initialBuf[10000];
+        unsigned char initialBuf[BUF_LEN];
         printf(">>");
         
         i = 0;
@@ -62,9 +63,38 @@ int main(int argc, char * argv[])
             initialBuf[i++] = c;
         }
         len = i;
-        i = strlen(strAppendDecoded); 
+    
+
+        // Clear and exit
+        if ((initialBuf[0] == 'c') && (initialBuf[1] == 'l'))
+        {
+            system("clear");
+            continue;
+        }
+        else if ((initialBuf[0] == 'q') && (initialBuf[1] == 'q'))
+        {
+            exit(0);
+        }
+        // On blank entry, reuse last input, except increment to record for blocks
+        if (i == 0)
+        {
+            if ( loopcount != 0)
+            {
+                memcpy(initialBuf, reuse, reuselen);
+                len = reuselen;
+            }
+        }
+        else
+        {
+            memset(reuse, '\0', BUF_LEN);
+            memcpy(reuse, initialBuf, i);
+            reuselen = i;
+        }
+        ++loopcount;
+
 
         // New buffer for size 
+        i = strlen(strAppendDecoded); 
         unsigned char inBlock[i+len+1];
 
         memcpy(inBlock, initialBuf, len);
@@ -137,7 +167,7 @@ int main(int argc, char * argv[])
         // Function to set th AES key, uses the context object
         // and takes the key and the number of bits in the key as the
         // second and third arguments
-        ret = mbedtls_aes_setkey_dec(&ctx, "YELLOW SUBMARINE", 128);
+        ret = mbedtls_aes_setkey_dec(&ctx, key, 128);
         if (ret)
         {
             // Should return 0 on success
@@ -178,10 +208,6 @@ int main(int argc, char * argv[])
 
 
 
-
-    // Remember the file needs to be base64 decoded first.
-    // The code to do that is here, but just in case im going to
-    // first use the openssl command line tool to accomplish that
 
 
 
