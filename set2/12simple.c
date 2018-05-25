@@ -9,7 +9,7 @@
 #include <mbedtls/aes.h>
 #define BUF_LEN 10000 
 
-
+// Refactor me... please
 
 
 
@@ -23,7 +23,7 @@ int main(int argc, char * argv[])
 {
 
     size_t len;
-    int ret,i = 0;
+    int ret,b,i = 0;
     char c;
     unsigned char * b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -74,6 +74,15 @@ int main(int argc, char * argv[])
         else if ((initialBuf[0] == 'q') && (initialBuf[1] == 'q'))
         {
             exit(0);
+        }
+        else if ((initialBuf[0] == 'r') && (initialBuf[1] == 'k'))
+        {
+            for (b = 0; b < 16; ++b)
+            {
+                printf("0x%x ", key[b]);
+            }
+            printf("\n");
+            continue;
         }
         // On blank entry, reuse last input, except increment to record for blocks
         if (i == 0)
