@@ -25,16 +25,17 @@ typedef struct {
 	char *role; 
 } Cookie;
 
-void profile_for(char *email);
+void profile_for(char *email, char* encoded);
 void arCalloc(char *ar);
 void parse( Cookie *kv, char *encodedCookie );
+void destroyMeta(char *email);
 
 
 
 int main(int argc, char * argv[])
 {
 
-    if (DEBUG) {
+    if (!DEBUG) {
         
         
         Cookie *foo = malloc(MALLOC_BUF);
@@ -43,16 +44,17 @@ int main(int argc, char * argv[])
         int uid;
 
         parse(foo, encoded);
-        uid = foo->uid;
-        
-        printf("%x\n", foo->email);
-
         free(foo);
     }
     
+    char encoded[MAX_LEN];
+    char input[MAX_LEN];
+
+    strcpy(input, "nick@dmtk.org&role=admin");
+    profile_for(input, encoded);
 
 
-
+    printf("%s\n", encoded);
 
 
 
@@ -72,14 +74,70 @@ int main(int argc, char * argv[])
 
 
 
-void profile_for(char *email)
+void profile_for(char *email, char* encoded)
 {
 
+    destroyMeta(email);
 
 
+    // Get random UID
+    srand(time(NULL));
+    int uid = rand() % 255;
+    
+    // Define role and UID buffer
+    char *role = "user";
+    char uidStr[4];
+    
+    // Ghetto itoa
+    sprintf(uidStr, "%d", uid);
+
+
+    
+    // Temp buffer to hold encoded profile
+    char tmp[MAX_LEN];
+    arCalloc(tmp);
+
+    // Begin encoding
+    strcat(tmp, "email=");
+    strcat(tmp, email);
+    strcat(tmp, "&uid=");
+    strcat(tmp, uidStr);
+    strcat(tmp, "&role=");
+    strcat(tmp, role);
+
+    strcpy(encoded,tmp);
+    return;
 
 
 }
+
+
+
+
+void destroyMeta(char *email)
+{
+    int i,x;
+    char tmp[MAX_LEN];
+    arCalloc(tmp);
+    
+    // Iterate through email contents, do not copy meta
+    for (i = x = 0; i < strlen(email) ; ++i) {
+        if (email[i] == '&' || email[i] == '=') {
+            continue;
+        }
+        tmp[x++] = email[i];
+    }
+
+    // Clear original email
+    arCalloc(email);
+
+    // Re-load with meta-escaped
+    strcpy(email, tmp);
+    return;
+
+
+}
+
 
 
 // Encoded parser
@@ -97,7 +155,7 @@ void parse( Cookie *kv, char *encodedCookie ) {
 	arCalloc(role);
 	arCalloc(uid);
 
-    // Get vals for 3 fields
+    // Get vals for 3 fields of foo
 	for (x = 0 ; x < FIELDS && i < strlen(encodedCookie) ;) {
 		for (; i < strlen(encodedCookie) ; ++i) {
 			
