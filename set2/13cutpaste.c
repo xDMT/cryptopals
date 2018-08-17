@@ -103,9 +103,16 @@ int main(int argc, char * argv[]) {
 		// Print ciphertext 
 		printEncArr((unsigned char *) encrypted);
 
-		arCalloc(input);
-		getInput(input, DECODE);
-		decryptAndParse(input,output, &ctx, len);
+		if (DEBUG) {
+			decryptAndParse(encrypted,output, &ctx, len);
+		}
+		else {
+			arCalloc(input);
+			getInput(input, DECODE);
+			decryptAndParse(input,output, &ctx, len);
+		}
+
+
 	}
 
 
@@ -357,7 +364,7 @@ int padBlock(char *input) {
 void printEncArr(unsigned char *ar) {
 	int i,  len = strlen(ar);
 	for (i=0; i < len; ++i) {
-		printf("%x", ar[i]);
+		printf("%c", ar[i]);
 	}
 	printf("\n");
 
@@ -422,14 +429,19 @@ void stripPadding(char *encoded) {
 
 void convertHex(char *hex) {
 
-	int i,x;
+	int i,x,len;
 	unsigned char inHex[2];
 	unsigned char outChar;
 	
 	for (i=x=0; i < strlen(hex); i+=2, ++x) {
 		memcpy(inHex, hex+i, 2);
-		outChar = (unsigned char) strol(inHex, NULL, 16);
+		outChar = (unsigned char) strtol(inHex, NULL, 16);
 		hex[x] = outChar;
+	}
+	len = strlen(hex);
+	x += 2;
+	for (; x < len; ++x){
+		hex[x] = '\0';
 	}
 
 }
