@@ -34,7 +34,7 @@ void profile_for(char *email, char* encoded);
 void parse( Cookie *kv, char *encodedCookie );
 void destroyMeta(char *email);
 void generateKey(char *key);
-void encryptEncoded(char *encoded, char *encrypted, mbedtls_aes_context *ctx) {
+void encryptEncoded(char *encoded, char *encrypted, mbedtls_aes_context *ctx);
 void padBlock(char *input);
 
 // Utility functions
@@ -46,8 +46,9 @@ void printEncArr(char *ar);
 
 
 
-int main(int argc, char * argv[])
-{
+int main(int argc, char * argv[]) {
+
+
 	// Seed random
     srand(time(NULL));
 	unsigned char key[16];
@@ -81,11 +82,11 @@ int main(int argc, char * argv[])
 
 		// Pad and encrypt
 		padBlock(encoded);
-		encryptEncoded(encoded, encrypted, ctx);
+		encryptEncoded(encoded, encrypted, &ctx);
 
 		// Print ciphertext 
-		printEncAr(encrypted)	
-
+		printEncArr(encrypted);
+	}
 
 
 }
@@ -94,8 +95,7 @@ int main(int argc, char * argv[])
 
 
 
-void profile_for(char *email, char* encoded)
-{
+void profile_for(char *email, char* encoded) {
 
     destroyMeta(email);
 
@@ -136,8 +136,7 @@ void profile_for(char *email, char* encoded)
 
 
 
-void destroyMeta(char *email)
-{
+void destroyMeta(char *email) {
     int i,x;
     char tmp[MAX_LEN];
     arCalloc(tmp);
@@ -269,7 +268,6 @@ void getInput(char *input) {
 
 
 
-}
 
 void encryptEncoded(char *encoded, char *encrypted, mbedtls_aes_context *ctx) {
 
@@ -282,7 +280,7 @@ void encryptEncoded(char *encoded, char *encrypted, mbedtls_aes_context *ctx) {
 	// Encrypt block by block
 	for (i = 0; i < len; i += 16) {
 		memcpy(blockIn, encoded+i, BLOCKSIZE);
-        mbedtls_aes_crypt_ecb(&ctx, MBEDTLS_AES_ENCRYPT, blockIn, blockOut);
+        mbedtls_aes_crypt_ecb(ctx, MBEDTLS_AES_ENCRYPT, blockIn, blockOut);
 		memcpy(blockOut, encrypted+i, BLOCKSIZE);
 	}
 	return;
@@ -292,8 +290,7 @@ void encryptEncoded(char *encoded, char *encrypted, mbedtls_aes_context *ctx) {
 
 
 
-void padBlock(char *input)
-{
+void padBlock(char *input) {
 
 
     int padding, i, len, blockMod;
