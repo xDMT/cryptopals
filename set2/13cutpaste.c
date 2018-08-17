@@ -90,7 +90,7 @@ int main(int argc, char * argv[]) {
 		encryptEncoded(encoded, encrypted, &ctx);
 
 		// Print ciphertext 
-		printEncArr((unsigned char) encrypted);
+		printEncArr((unsigned char *) encrypted);
 	}
 
 
@@ -335,6 +335,7 @@ void padBlock(char *input) {
 void printEncArr(unsigned char *ar) {
 	int i,  len = strlen(ar);
 	for (i=0; i < len; ++i) {
+		printf("%x", ar[i]);
 	}
 	printf("\n");
 
