@@ -29,33 +29,40 @@ void profile_for(char *email, char* encoded);
 void arCalloc(char *ar);
 void parse( Cookie *kv, char *encodedCookie );
 void destroyMeta(char *email);
+void getInput(char *input);
+void generateKey(char *key);
+void encryptEncoded(char *encoded, char *encrypted);
+
 
 
 
 int main(int argc, char * argv[])
 {
+	// Seed random
+    srand(time(NULL));
+	unsigned char key[16];
+	char input[MAX_LEN];
+	char encodedInput[MAX_LEN];
+	char encrypted[MAX_LEN];
 
-    if (!DEBUG) {
-        
-        
-        Cookie *foo = malloc(MALLOC_BUF);
-        char *encoded = "email=foo@bar.com&uid=10&role=user";
-        
-        int uid;
-
-        parse(foo, encoded);
-        free(foo);
-    }
-    
-    char encoded[MAX_LEN];
-    char input[MAX_LEN];
-
-    strcpy(input, "nick@dmtk.org&role=admin");
-    profile_for(input, encoded);
+	
+	// Set up MbedTLS struct
+    mbedtls_aes_context ctx;
+    ctx.nr = 10;
+    mbedtls_aes_init(&ctx);
+	
+	generateKey(key);
+	
+	// Returns 0 on success
+	int ret = mbedtls_aes_setkey_dec(&ctx, key, 128);
 
 
-    printf("%s\n", encoded);
 
+	while ((true) && (!ret)) {
+		arCalloc(input);
+		getInput(input);
+		profile_for(input, encodedInput);	
+				
 
 
 
@@ -209,3 +216,54 @@ void arCalloc(char *ar) {
 	}
 
 }
+
+
+
+void generateKey(char *key) {
+	
+	int i;
+	for (i = 0; i < 16; ++i) {
+		key[i] = (rand() % 255);
+	}
+	return;
+}
+
+
+
+void getInput(char *input) {
+	char c;
+	int i = 0;
+	
+	printf("Enter email: ");
+	while ((c = getchar()) && (c != '\n')) {
+		
+		if (c != '\b') {
+			input[++i] = c;
+		}
+		else if (i > 0) {
+			i -= 1;
+		}
+	}
+	return;
+}
+
+
+
+
+
+
+
+
+}
+
+void encryptEncoded(char *encoded, char *encrypted) {
+
+
+
+
+
+
+
+}
+
+
