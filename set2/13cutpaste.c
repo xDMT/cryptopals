@@ -64,7 +64,12 @@ int main(int argc, char * argv[]) {
     ctx.nr = 10;
     mbedtls_aes_init(&ctx);
 	
-	generateKey(key);
+	if (DEBUG) {
+		strcpy(key, "YELLOW SUBMARINE");
+	}
+	else {
+		generateKey(key);
+	}
 	
 	// Returns 0 on success
 	int ret = mbedtls_aes_setkey_dec(&ctx, key, 128);
@@ -99,10 +104,15 @@ void profile_for(char *email, char* encoded) {
 
     destroyMeta(email);
 
-
+	int uid;
     // Get random UID
-    srand(time(NULL));
-    int uid = rand() % 255;
+	if (DEBUG) {
+		uid = 1;
+	}
+	else {
+		srand(time(NULL));
+		uid = rand() % 255;
+	}
     
     // Define role and UID buffer
     char *role = "user";
@@ -252,7 +262,7 @@ void getInput(char *input) {
 	while ((c = getchar()) && (c != '\n')) {
 		
 		if (c != '\b') {
-			input[++i] = c;
+			input[i++] = c;
 		}
 		else if (i > 0) {
 			i -= 1;
@@ -272,16 +282,18 @@ void getInput(char *input) {
 void encryptEncoded(char *encoded, char *encrypted, mbedtls_aes_context *ctx) {
 
 	int i, len = strlen(encoded);
-	char blockIn[MAX_LEN], blockOut[MAX_LEN];
-	
+	char blockIn[BLOCKSIZE], blockOut[BLOCKSIZE];
+	arCalloc(encrypted);
+
+
 	// Make sure input is blocksize multiple
-	!(len % BLOCKSIZE) ? exit(1) : len;
+	((len % BLOCKSIZE) != 0) ? exit(1) : len;
 
 	// Encrypt block by block
 	for (i = 0; i < len; i += 16) {
 		memcpy(blockIn, encoded+i, BLOCKSIZE);
         mbedtls_aes_crypt_ecb(ctx, MBEDTLS_AES_ENCRYPT, blockIn, blockOut);
-		memcpy(blockOut, encrypted+i, BLOCKSIZE);
+		memcpy(encrypted+i, blockOut, BLOCKSIZE);
 	}
 	return;
 
@@ -323,7 +335,7 @@ void padBlock(char *input) {
 void printEncArr(char *ar) {
 	int i,  len = strlen(ar);
 	for (i=0; i < len; ++i) {
-		printf("%x", ar[i]);
+		printf("%x\n", ar[i]);
 	}
 	printf("\n");
 
