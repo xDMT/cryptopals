@@ -40,7 +40,7 @@ void padBlock(char *input);
 // Utility functions
 void arCalloc(char *ar);
 void getInput(char *input);
-void printEncArr(char *ar);
+void printEncArr(unsigned char *ar);
 
 
 
@@ -90,7 +90,7 @@ int main(int argc, char * argv[]) {
 		encryptEncoded(encoded, encrypted, &ctx);
 
 		// Print ciphertext 
-		printEncArr(encrypted);
+		printEncArr((unsigned char) encrypted);
 	}
 
 
@@ -332,10 +332,9 @@ void padBlock(char *input) {
 
 
 // Print encrypted string in hex
-void printEncArr(char *ar) {
+void printEncArr(unsigned char *ar) {
 	int i,  len = strlen(ar);
 	for (i=0; i < len; ++i) {
-		printf("%x\n", ar[i]);
 	}
 	printf("\n");
 
