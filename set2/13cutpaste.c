@@ -4,11 +4,14 @@
 #include <string.h>
 #include <float.h>
 #include <time.h>
+
 #define MALLOC_BUF 4096
 #define MAX_LEN 100
 #define FIELDS 3
 #define true 1
 #define false 0
+#define BLOCKSIZE 16
+#define KEYSIZE 16
 
 #define DEBUG 1
 
@@ -18,20 +21,27 @@
 
 
 
-
+// Structured cookie
 typedef struct {
 	char *email;
 	int uid;
 	char *role; 
 } Cookie;
 
+
+// Core functions	
 void profile_for(char *email, char* encoded);
-void arCalloc(char *ar);
 void parse( Cookie *kv, char *encodedCookie );
 void destroyMeta(char *email);
-void getInput(char *input);
 void generateKey(char *key);
-void encryptEncoded(char *encoded, char *encrypted);
+void encryptEncoded(char *encoded, char *encrypted, mbedtls_aes_context *ctx) {
+void padBlock(char *input);
+
+// Utility functions
+void arCalloc(char *ar);
+void getInput(char *input);
+void printEncArr(char *ar);
+
 
 
 
@@ -41,11 +51,13 @@ int main(int argc, char * argv[])
 	// Seed random
     srand(time(NULL));
 	unsigned char key[16];
-	char input[MAX_LEN];
-	char encodedInput[MAX_LEN];
-	char encrypted[MAX_LEN];
-
+	char input[MAX_LEN], output[MAX_LEN];
+	char encoded[MAX_LEN], encrypted[MAX_LEN];
 	
+
+
+
+
 	// Set up MbedTLS struct
     mbedtls_aes_context ctx;
     ctx.nr = 10;
@@ -59,19 +71,20 @@ int main(int argc, char * argv[])
 
 
 	while ((true) && (!ret)) {
+		
+		// Clear and get input
 		arCalloc(input);
 		getInput(input);
-		profile_for(input, encodedInput);	
-				
 
+		// Encode email into profile
+		profile_for(input, encoded);
 
+		// Pad and encrypt
+		padBlock(encoded);
+		encryptEncoded(encoded, encrypted, ctx);
 
-
-
-
-
-
-
+		// Print ciphertext 
+		printEncAr(encrypted)	
 
 
 
@@ -103,6 +116,8 @@ void profile_for(char *email, char* encoded)
     // Temp buffer to hold encoded profile
     char tmp[MAX_LEN];
     arCalloc(tmp);
+	arCalloc(encoded);
+
 
     // Begin encoding
     strcat(tmp, "email=");
@@ -222,7 +237,7 @@ void arCalloc(char *ar) {
 void generateKey(char *key) {
 	
 	int i;
-	for (i = 0; i < 16; ++i) {
+	for (i = 0; i < KEYSIZE; ++i) {
 		key[i] = (rand() % 255);
 	}
 	return;
@@ -256,14 +271,65 @@ void getInput(char *input) {
 
 }
 
-void encryptEncoded(char *encoded, char *encrypted) {
+void encryptEncoded(char *encoded, char *encrypted, mbedtls_aes_context *ctx) {
 
+	int i, len = strlen(encoded);
+	char blockIn[MAX_LEN], blockOut[MAX_LEN];
+	
+	// Make sure input is blocksize multiple
+	!(len % BLOCKSIZE) ? exit(1) : len;
 
-
-
-
-
+	// Encrypt block by block
+	for (i = 0; i < len; i += 16) {
+		memcpy(blockIn, encoded+i, BLOCKSIZE);
+        mbedtls_aes_crypt_ecb(&ctx, MBEDTLS_AES_ENCRYPT, blockIn, blockOut);
+		memcpy(blockOut, encrypted+i, BLOCKSIZE);
+	}
+	return;
 
 }
 
+
+
+
+void padBlock(char *input)
+{
+
+
+    int padding, i, len, blockMod;
+	len = strlen(input);
+	blockMod = len % BLOCKSIZE;
+	
+
+	// Subtract modulus from block size to get padding
+    if (blockMod) {
+		padding = BLOCKSIZE - blockMod;
+    }
+	// No padding required, return
+	else {
+		return;
+	}
+
+
+
+    // Append bytes to end of original string
+    for (i = len; i < (len+padding); ++i)
+    {
+		input[i] = (unsigned char) padding;
+    }
+
+    return ;
+}
+
+
+// Print encrypted string in hex
+void printEncArr(char *ar) {
+	int i,  len = strlen(ar);
+	for (i=0; i < len; ++i) {
+		printf("%x", ar[i]);
+	}
+	printf("\n");
+
+	return;
+}
 
