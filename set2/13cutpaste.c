@@ -13,6 +13,11 @@
 #define BLOCKSIZE 16
 #define KEYSIZE 16
 
+
+#define ENCODE 0 
+#define DECODE 1
+
+
 #define DEBUG 1
 
 
@@ -29,18 +34,23 @@ typedef struct {
 } Cookie;
 
 
-// Core functions	
+// Parsing functions	
 void profile_for(char *email, char* encoded);
 void parse( Cookie *kv, char *encodedCookie );
 void destroyMeta(char *email);
+
+// Encryption functions
 void generateKey(char *key);
 void encryptEncoded(char *encoded, char *encrypted, mbedtls_aes_context *ctx);
-void padBlock(char *input);
+int padBlock(char *input);
+void decryptAndParse(char *encrypted, char *encoded, mbedtls_aes_context *ctx, int len);
+void stripPadding(char *encoded);
 
 // Utility functions
 void arCalloc(char *ar);
-void getInput(char *input);
+void getInput(char *input, int mode);
 void printEncArr(unsigned char *ar);
+void convertHex(char *hex);
 
 
 
@@ -52,6 +62,7 @@ int main(int argc, char * argv[]) {
 	// Seed random
     srand(time(NULL));
 	unsigned char key[16];
+	int len;
 	char input[MAX_LEN], output[MAX_LEN];
 	char encoded[MAX_LEN], encrypted[MAX_LEN];
 	
@@ -80,17 +91,21 @@ int main(int argc, char * argv[]) {
 		
 		// Clear and get input
 		arCalloc(input);
-		getInput(input);
+		getInput(input, ENCODE);
 
 		// Encode email into profile
 		profile_for(input, encoded);
 
 		// Pad and encrypt
-		padBlock(encoded);
+		len = padBlock(encoded);
 		encryptEncoded(encoded, encrypted, &ctx);
 
 		// Print ciphertext 
 		printEncArr((unsigned char *) encrypted);
+
+		arCalloc(input);
+		getInput(input, DECODE);
+		decryptAndParse(input,output, &ctx, len);
 	}
 
 
@@ -254,11 +269,18 @@ void generateKey(char *key) {
 
 
 
-void getInput(char *input) {
+void getInput(char *input, int mode) {
 	char c;
 	int i = 0;
-	
-	printf("Enter email: ");
+
+	if (mode == ENCODE) {
+		printf("Enter email: ");
+	}
+	else
+	{
+		printf("Decode email: ");
+	}
+
 	while ((c = getchar()) && (c != '\n')) {
 		
 		if (c != '\b') {
@@ -302,7 +324,7 @@ void encryptEncoded(char *encoded, char *encrypted, mbedtls_aes_context *ctx) {
 
 
 
-void padBlock(char *input) {
+int padBlock(char *input) {
 
 
     int padding, i, len, blockMod;
@@ -316,7 +338,7 @@ void padBlock(char *input) {
     }
 	// No padding required, return
 	else {
-		return;
+		return len;
 	}
 
 
@@ -327,7 +349,7 @@ void padBlock(char *input) {
 		input[i] = (unsigned char) padding;
     }
 
-    return ;
+    return len+padding ;
 }
 
 
@@ -341,4 +363,79 @@ void printEncArr(unsigned char *ar) {
 
 	return;
 }
+
+
+
+
+void decryptAndParse(char *encrypted, char *encoded, mbedtls_aes_context *ctx, int len) {
+
+	int i;
+	char blockIn[BLOCKSIZE], blockOut[BLOCKSIZE];
+	arCalloc(encoded);
+	
+	convertHex(encrypted);
+
+
+	
+	// Decrypt input
+	for (i = 0; i < len; i += 16) {
+		memcpy(blockIn, encrypted+i, BLOCKSIZE);
+        mbedtls_aes_crypt_ecb(ctx, MBEDTLS_AES_DECRYPT, blockIn, blockOut);
+		memcpy(encoded+i, blockOut, BLOCKSIZE);
+	}
+
+	stripPadding(encoded);
+
+	printf("Decoded: ");
+	for (i=0; i < len; ++i) {
+		printf("%c", encoded[i]);
+	}
+	printf("\n");
+
+
+}
+
+
+
+void stripPadding(char *encoded) {
+
+	int len = strlen(encoded);
+	int x, i = len-1;
+	unsigned char a,b;
+
+
+	// If last byte is 0x1, or last two byte are same, assum
+	// padding and strip 
+	if ((encoded[i] == encoded[i-1]) || (encoded[i] == 0x1) ) {
+		a = encoded[i];
+
+		// Traverse backwards in string, erasing padding
+		// for as many bytes as padding value
+		for (i=0, x=len-1; i <= a; i++, x--) {
+			encoded[x] = '\0';
+		}
+	}
+	return;
+}
+
+
+
+void convertHex(char *hex) {
+
+	int i,x;
+	unsigned char inHex[2];
+	unsigned char outChar;
+	
+	for (i=x=0; i < strlen(hex); i+=2, ++x) {
+		memcpy(inHex, hex+i, 2);
+		outChar = (unsigned char) strol(inHex, NULL, 16);
+		hex[x] = outChar;
+	}
+
+}
+
+
+
+
+
 
