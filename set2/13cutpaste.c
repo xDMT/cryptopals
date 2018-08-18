@@ -41,9 +41,9 @@ void destroyMeta(char *email);
 
 // Encryption functions
 void generateKey(char *key);
-void encryptEncoded(char *encoded, char *encrypted, mbedtls_aes_context *ctx);
+void encryptEncoded(char *encoded, char *encrypted, char *key);
 int padBlock(char *input);
-void decryptAndParse(char *encrypted, char *encoded, mbedtls_aes_context *ctx, int len);
+void decryptAndParse(char *encrypted, char *encoded, char *key, int len);
 void stripPadding(char *encoded);
 
 // Utility functions
@@ -51,6 +51,7 @@ void arCalloc(char *ar);
 void getInput(char *input, int mode);
 void printEncArr(unsigned char *ar);
 void convertHex(char *hex);
+mbedtls_aes_context *aesInit();
 
 
 
@@ -70,10 +71,6 @@ int main(int argc, char * argv[]) {
 
 
 
-	// Set up MbedTLS struct
-    mbedtls_aes_context ctx;
-    ctx.nr = 10;
-    mbedtls_aes_init(&ctx);
 	
 	if (DEBUG) {
 		strcpy(key, "YELLOW SUBMARINE");
@@ -83,11 +80,10 @@ int main(int argc, char * argv[]) {
 	}
 	
 	// Returns 0 on success
-	int ret = mbedtls_aes_setkey_dec(&ctx, key, 128);
 
 
 
-	while ((true) && (!ret)) {
+	while (true) {
 		
 		// Clear and get input
 		arCalloc(input);
@@ -98,18 +94,18 @@ int main(int argc, char * argv[]) {
 
 		// Pad and encrypt
 		len = padBlock(encoded);
-		encryptEncoded(encoded, encrypted, &ctx);
+		encryptEncoded(encoded, encrypted, key);
 
 		// Print ciphertext 
 		printEncArr((unsigned char *) encrypted);
 
 		if (DEBUG) {
-			decryptAndParse(encrypted,output, &ctx, len);
+			decryptAndParse(encrypted,output, key, len);
 		}
 		else {
 			arCalloc(input);
 			getInput(input, DECODE);
-			decryptAndParse(input,output, &ctx, len);
+			decryptAndParse(input,output, key, len);
 		}
 
 
@@ -308,22 +304,33 @@ void getInput(char *input, int mode) {
 
 
 
-void encryptEncoded(char *encoded, char *encrypted, mbedtls_aes_context *ctx) {
+void encryptEncoded(char *encoded, char *encrypted, char *key) {
+
+
+	// Initialize context and set key
+	mbedtls_aes_context * enc_context = aesInit();
+	mbedtls_aes_setkey_enc(enc_context, key, 128);
+
+
 
 	int i, len = strlen(encoded);
 	char blockIn[BLOCKSIZE], blockOut[BLOCKSIZE];
+
+	// Clear encrypted
 	arCalloc(encrypted);
 
 
 	// Make sure input is blocksize multiple
 	((len % BLOCKSIZE) != 0) ? exit(1) : len;
-
+	
 	// Encrypt block by block
 	for (i = 0; i < len; i += 16) {
 		memcpy(blockIn, encoded+i, BLOCKSIZE);
-        mbedtls_aes_crypt_ecb(ctx, MBEDTLS_AES_ENCRYPT, blockIn, blockOut);
+        mbedtls_aes_crypt_ecb(enc_context, MBEDTLS_AES_ENCRYPT, blockIn, blockOut);
 		memcpy(encrypted+i, blockOut, BLOCKSIZE);
 	}
+
+	free(enc_context);
 	return;
 
 }
@@ -374,31 +381,39 @@ void printEncArr(unsigned char *ar) {
 
 
 
-void decryptAndParse(char *encrypted, char *encoded, mbedtls_aes_context *ctx, int len) {
+void decryptAndParse(char *encrypted, char *encoded, char *key, int len) {
+
+
+	// Initialize context and set key
+	mbedtls_aes_context * dec_context = aesInit();
+	mbedtls_aes_setkey_dec(dec_context, key, 128);
+
 
 	int i;
 	char blockIn[BLOCKSIZE], blockOut[BLOCKSIZE];
 	arCalloc(encoded);
 	
-	convertHex(encrypted);
+	(DEBUG == false) ? convertHex(encrypted) : i;
 
 
 	
 	// Decrypt input
 	for (i = 0; i < len; i += 16) {
 		memcpy(blockIn, encrypted+i, BLOCKSIZE);
-        mbedtls_aes_crypt_ecb(ctx, MBEDTLS_AES_DECRYPT, blockIn, blockOut);
+        mbedtls_aes_crypt_ecb(dec_context, MBEDTLS_AES_DECRYPT, blockIn, blockOut);
 		memcpy(encoded+i, blockOut, BLOCKSIZE);
 	}
 
 	stripPadding(encoded);
 
 	printf("Decoded: ");
-	for (i=0; i < len; ++i) {
+	for (i=0; i < len+1; ++i) {
 		printf("%c", encoded[i]);
 	}
 	printf("\n");
+	free(dec_context);
 
+	return;
 
 }
 
@@ -447,6 +462,15 @@ void convertHex(char *hex) {
 }
 
 
+mbedtls_aes_context *aesInit() {
+	
+	// Set up MbedTLS struct
+    mbedtls_aes_context *ctx = (mbedtls_aes_context *) malloc(sizeof(mbedtls_aes_context));
+    ctx->nr = 10;
+    mbedtls_aes_init(ctx);
+	return ctx;
+
+}
 
 
 
