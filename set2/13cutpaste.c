@@ -433,7 +433,7 @@ void stripPadding(char *encoded) {
 
 		// Traverse backwards in string, erasing padding
 		// for as many bytes as padding value
-		for (i=0, x=len-1; i <= a; i++, x--) {
+		for (i=0, x=len-1; i < a; i++, x--) {
 			encoded[x] = '\0';
 		}
 	}
