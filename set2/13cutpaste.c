@@ -4,6 +4,9 @@
 #include <string.h>
 #include <float.h>
 #include <time.h>
+#include <assert.h>
+
+
 
 #define MALLOC_BUF 4096
 #define MAX_LEN 100
@@ -18,7 +21,7 @@
 #define DECODE 1
 
 
-#define DEBUG 1
+#define DEBUG 0
 
 
 
@@ -40,10 +43,10 @@ void parse( Cookie *kv, char *encodedCookie );
 void destroyMeta(char *email);
 
 // Encryption functions
-void generateKey(char *key);
-void encryptEncoded(char *encoded, char *encrypted, char *key);
+void generateKey(unsigned char *key);
+void encryptEncoded(char *encoded, char *encrypted, const unsigned char *key);
 int padBlock(char *input);
-void decryptAndParse(char *encrypted, char *encoded, char *key, int len);
+void decryptAndParse(char *encrypted, char *encoded, const unsigned char *key, int len);
 void stripPadding(char *encoded);
 
 // Utility functions
@@ -62,7 +65,7 @@ int main(int argc, char * argv[]) {
 
 	// Seed random
     srand(time(NULL));
-	unsigned char key[16];
+	const unsigned char *key;
 	int len;
 	char input[MAX_LEN], output[MAX_LEN];
 	char encoded[MAX_LEN], encrypted[MAX_LEN];
@@ -73,10 +76,10 @@ int main(int argc, char * argv[]) {
 
 	
 	if (DEBUG) {
-		strcpy(key, "YELLOW SUBMARINE");
+		key = "YELLOW SUBMARINE";
 	}
 	else {
-		generateKey(key);
+		key =	generateKey();
 	}
 	
 	// Returns 0 on success
@@ -110,6 +113,13 @@ int main(int argc, char * argv[]) {
 
 
 	}
+	
+
+	/* Test out implementing signal handler to free
+	 * malloc'd memory on SIGINT
+	 */
+
+
 
 
 }
@@ -261,13 +271,16 @@ void arCalloc(char *ar) {
 
 
 
-void generateKey(char *key) {
-	
+unsigned char * generateKey() {
+
+
+	unsigned char *key = (unsigned char *) malloc(sizeof(unsigned char) * 17);
 	int i;
-	for (i = 0; i < KEYSIZE; ++i) {
+	for (i = 0; i < KEYSIZE; ++i) {j
 		key[i] = (rand() % 255);
 	}
-	return;
+	key[16] = '\0';
+	return key;
 }
 
 
@@ -283,7 +296,6 @@ void getInput(char *input, int mode) {
 	{
 		printf("Decode email: ");
 	}
-
 	while ((c = getchar()) && (c != '\n')) {
 		
 		if (c != '\b') {
@@ -293,6 +305,7 @@ void getInput(char *input, int mode) {
 			i -= 1;
 		}
 	}
+
 	return;
 }
 
@@ -304,13 +317,13 @@ void getInput(char *input, int mode) {
 
 
 
-void encryptEncoded(char *encoded, char *encrypted, char *key) {
+void encryptEncoded(char *encoded, char *encrypted, const unsigned char *key) {
 
 
 	// Initialize context and set key
 	mbedtls_aes_context * enc_context = aesInit();
-	mbedtls_aes_setkey_enc(enc_context, key, 128);
-
+	int ret = mbedtls_aes_setkey_enc(enc_context, key, 128);
+	assert(ret == 0);
 
 
 	int i, len = strlen(encoded);
@@ -371,7 +384,7 @@ int padBlock(char *input) {
 void printEncArr(unsigned char *ar) {
 	int i,  len = strlen(ar);
 	for (i=0; i < len; ++i) {
-		printf("%c", ar[i]);
+		printf("%.2x", ar[i]);
 	}
 	printf("\n");
 
@@ -381,12 +394,13 @@ void printEncArr(unsigned char *ar) {
 
 
 
-void decryptAndParse(char *encrypted, char *encoded, char *key, int len) {
+void decryptAndParse(char *encrypted, char *encoded, const unsigned char *key, int len) {
 
 
 	// Initialize context and set key
 	mbedtls_aes_context * dec_context = aesInit();
-	mbedtls_aes_setkey_dec(dec_context, key, 128);
+	int ret = mbedtls_aes_setkey_dec(dec_context, key, 128);
+	assert(ret == 0);
 
 
 	int i;
@@ -444,20 +458,25 @@ void stripPadding(char *encoded) {
 
 void convertHex(char *hex) {
 
-	int i,x,len;
-	unsigned char inHex[2];
-	unsigned char outChar;
-	
-	for (i=x=0; i < strlen(hex); i+=2, ++x) {
+	int i,x,len = strlen(hex);
+	unsigned char inHex[2], tmp[MAX_LEN], outChar;
+
+	// Clear temp array
+	arCalloc(tmp);
+
+
+	// Grab hex string and convert to actual hex value
+	for (i=x=0; i < len; i+=2, ++x) {
 		memcpy(inHex, hex+i, 2);
 		outChar = (unsigned char) strtol(inHex, NULL, 16);
-		hex[x] = outChar;
+
+		// Store in temp
+		tmp[x] = outChar;
 	}
-	len = strlen(hex);
-	x += 2;
-	for (; x < len; ++x){
-		hex[x] = '\0';
-	}
+	arCalloc(hex);
+	strcpy(hex,tmp);
+	
+	return;
 
 }
 
@@ -468,6 +487,8 @@ mbedtls_aes_context *aesInit() {
     mbedtls_aes_context *ctx = (mbedtls_aes_context *) malloc(sizeof(mbedtls_aes_context));
     ctx->nr = 10;
     mbedtls_aes_init(ctx);
+
+	// Return pointer to context
 	return ctx;
 
 }
