@@ -43,10 +43,10 @@ void parse( Cookie *kv, char *encodedCookie );
 void destroyMeta(char *email);
 
 // Encryption functions
-void generateKey(unsigned char *key);
+unsigned char * generateKey();
 void encryptEncoded(char *encoded, char *encrypted, const unsigned char *key);
 int padBlock(char *input);
-void decryptAndParse(char *encrypted, char *encoded, const unsigned char *key, int len);
+void decryptAndParse(unsigned char *encrypted, unsigned char *encoded, const unsigned char *key, int len);
 void stripPadding(char *encoded);
 
 // Utility functions
@@ -67,8 +67,7 @@ int main(int argc, char * argv[]) {
     srand(time(NULL));
 	const unsigned char *key;
 	int len;
-	char input[MAX_LEN], output[MAX_LEN];
-	char encoded[MAX_LEN], encrypted[MAX_LEN];
+	unsigned char input[MAX_LEN], output[MAX_LEN], encoded[MAX_LEN], encrypted[MAX_LEN];
 	
 
 
@@ -79,7 +78,8 @@ int main(int argc, char * argv[]) {
 		key = "YELLOW SUBMARINE";
 	}
 	else {
-		key =	generateKey();
+	//	key =	generateKey();
+		key = "YELLOW SUBMARINE";
 	}
 	
 	// Returns 0 on success
@@ -276,7 +276,7 @@ unsigned char * generateKey() {
 
 	unsigned char *key = (unsigned char *) malloc(sizeof(unsigned char) * 17);
 	int i;
-	for (i = 0; i < KEYSIZE; ++i) {j
+	for (i = 0; i < KEYSIZE; ++i) {
 		key[i] = (rand() % 255);
 	}
 	key[16] = '\0';
@@ -383,10 +383,15 @@ int padBlock(char *input) {
 // Print encrypted string in hex
 void printEncArr(unsigned char *ar) {
 	int i,  len = strlen(ar);
+    printf("Reference: ");
+	for (i=0; i < len; ++i) {
+		printf("0x%.2x ", ar[i]);
+	}
+	printf("\n\nPaste: ");
 	for (i=0; i < len; ++i) {
 		printf("%.2x", ar[i]);
 	}
-	printf("\n");
+    printf("\n\n");
 
 	return;
 }
@@ -394,7 +399,7 @@ void printEncArr(unsigned char *ar) {
 
 
 
-void decryptAndParse(char *encrypted, char *encoded, const unsigned char *key, int len) {
+void decryptAndParse(unsigned char *encrypted, unsigned char *encoded, const unsigned char *key, int len) {
 
 
 	// Initialize context and set key
@@ -404,11 +409,15 @@ void decryptAndParse(char *encrypted, char *encoded, const unsigned char *key, i
 
 
 	int i;
-	char blockIn[BLOCKSIZE], blockOut[BLOCKSIZE];
+	unsigned char blockIn[BLOCKSIZE], blockOut[BLOCKSIZE];
 	arCalloc(encoded);
-	
-	(DEBUG == false) ? convertHex(encrypted) : i;
 
+    
+	(DEBUG == false) ? convertHex(encrypted) : i;
+    printf("Confirm encrypted: ");
+	for (i=0; i < len+1; ++i) {
+		printf("0x%.2x ", encrypted[i]);
+    }	
 
 	
 	// Decrypt input
@@ -420,7 +429,7 @@ void decryptAndParse(char *encrypted, char *encoded, const unsigned char *key, i
 
 	stripPadding(encoded);
 
-	printf("Decoded: ");
+	printf("\n\nDecoded: ");
 	for (i=0; i < len+1; ++i) {
 		printf("%c", encoded[i]);
 	}
