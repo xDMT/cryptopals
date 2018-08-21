@@ -53,7 +53,7 @@ void stripPadding(char *encoded);
 void arCalloc(char *ar);
 void getInput(char *input, int mode);
 void printEncArr(unsigned char *ar);
-void convertHex(char *hex);
+void convertHex(unsigned char *hex);
 mbedtls_aes_context *aesInit();
 
 
@@ -465,7 +465,7 @@ void stripPadding(char *encoded) {
 
 
 
-void convertHex(char *hex) {
+void convertHex(unsigned char *hex) {
 
 	int i,x,len = strlen(hex);
 	unsigned char inHex[2], tmp[MAX_LEN], outChar;
@@ -477,7 +477,7 @@ void convertHex(char *hex) {
 	// Grab hex string and convert to actual hex value
 	for (i=x=0; i < len; i+=2, ++x) {
 		memcpy(inHex, hex+i, 2);
-		outChar = (unsigned char) strtol(inHex, NULL, 16);
+		outChar = strtol(inHex, NULL, 16);
 
 		// Store in temp
 		tmp[x] = outChar;
