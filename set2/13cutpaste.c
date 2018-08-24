@@ -468,7 +468,8 @@ void stripPadding(char *encoded) {
 void convertHex(unsigned char *hex) {
 
 	int i,x,len = strlen(hex);
-	unsigned char inHex[2], tmp[MAX_LEN], outChar;
+	unsigned char inHex[3], tmp[MAX_LEN], outChar;
+    inHex[2] = '\0';
 
 	// Clear temp array
 	arCalloc(tmp);
