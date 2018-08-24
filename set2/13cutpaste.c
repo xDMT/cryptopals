@@ -412,8 +412,8 @@ void decryptAndParse(unsigned char *encrypted, unsigned char *encoded, const uns
 	arCalloc(encoded);
 
     
+    len = strlen(encrypted)/2;
 	(DEBUG == false) ? convertHex(encrypted) : i;
-    len = strlen(encrypted);
     printf("Confirm encrypted: ");
 	for (i=0; i < len+1; ++i) {
 		printf("0x%.2x ", encrypted[i]);
