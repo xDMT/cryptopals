@@ -51,7 +51,7 @@ void stripPadding(char *encoded);
 
 // Utility functions
 void arCalloc(char *ar);
-void getInput(char *input, int mode);
+int getInput(char *input, int mode);
 void printEncArr(unsigned char *ar);
 void convertHex(unsigned char *hex);
 mbedtls_aes_context *aesInit();
@@ -78,8 +78,7 @@ int main(int argc, char * argv[]) {
 		key = "YELLOW SUBMARINE";
 	}
 	else {
-	//	key =	generateKey();
-		key = "YELLOW SUBMARINE";
+		key =	generateKey();
 	}
 	
 	// Returns 0 on success
@@ -107,7 +106,7 @@ int main(int argc, char * argv[]) {
 		}
 		else {
 			arCalloc(input);
-			getInput(input, DECODE);
+			len = getInput(input, DECODE);
 			decryptAndParse(input,output, key, len);
 		}
 
@@ -285,7 +284,7 @@ unsigned char * generateKey() {
 
 
 
-void getInput(char *input, int mode) {
+int getInput(char *input, int mode) {
 	char c;
 	int i = 0;
 
@@ -306,7 +305,7 @@ void getInput(char *input, int mode) {
 		}
 	}
 
-	return;
+	return i ;
 }
 
 
@@ -383,7 +382,7 @@ int padBlock(char *input) {
 // Print encrypted string in hex
 void printEncArr(unsigned char *ar) {
 	int i,x,  len = strlen(ar);
-    printf("Reference: ");
+    printf("Cipher-text: ");
     for (x=0; x < len;) {
         for (i=0; i < BLOCKSIZE; ++i) {
             printf("%.2x", ar[x++]);
@@ -414,11 +413,13 @@ void decryptAndParse(unsigned char *encrypted, unsigned char *encoded, const uns
     
     len = strlen(encrypted)/2;
 	(DEBUG == false) ? convertHex(encrypted) : i;
-    printf("Confirm encrypted: ");
-	for (i=0; i < len+1; ++i) {
-		printf("0x%.2x ", encrypted[i]);
-    }	
-
+    
+    if (DEBUG) {
+        printf("Confirm encrypted: ");
+        for (i=0; i < len+1; ++i) {
+            printf("0x%.2x ", encrypted[i]);
+        }	
+    }
 	
 	// Decrypt input
 	for (i = 0; i < len; i += 16) {
