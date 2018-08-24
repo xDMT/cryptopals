@@ -382,15 +382,14 @@ int padBlock(char *input) {
 
 // Print encrypted string in hex
 void printEncArr(unsigned char *ar) {
-	int i,  len = strlen(ar);
+	int i,x,  len = strlen(ar);
     printf("Reference: ");
-	for (i=0; i < len; ++i) {
-		printf("0x%.2x ", ar[i]);
-	}
-	printf("\n\nPaste: ");
-	for (i=0; i < len; ++i) {
-		printf("%.2x", ar[i]);
-	}
+    for (x=0; x < len;) {
+        for (i=0; i < BLOCKSIZE; ++i) {
+            printf("%.2x", ar[x++]);
+        }
+        printf(" ");
+    }
     printf("\n\n");
 
 	return;
@@ -414,6 +413,7 @@ void decryptAndParse(unsigned char *encrypted, unsigned char *encoded, const uns
 
     
 	(DEBUG == false) ? convertHex(encrypted) : i;
+    len = strlen(encrypted);
     printf("Confirm encrypted: ");
 	for (i=0; i < len+1; ++i) {
 		printf("0x%.2x ", encrypted[i]);
