@@ -131,15 +131,8 @@ void profile_for(char *email, char* encoded) {
 
     destroyMeta(email);
 
-	int uid;
+	int uid = 10;
     // Get random UID
-	if (DEBUG) {
-		uid = 1;
-	}
-	else {
-		srand(time(NULL));
-		uid = rand() % 255;
-	}
     
     // Define role and UID buffer
     char *role = "user";
@@ -250,9 +243,11 @@ void parse( Cookie *kv, char *encodedCookie ) {
     }
     int uidInt = atoi(uid);
 
-    kv->email = email;
-    kv->uid = uidInt;
-    kv->role = role;
+    printf("Parsed:\n- - - - - - - - - \n\n");
+    printf("Email: %s\n", email);
+    printf("UID: %d\n", uidInt);
+    printf("Role: %s\n\n", role);
+
 
     return;
 
@@ -382,13 +377,19 @@ int padBlock(char *input) {
 // Print encrypted string in hex
 void printEncArr(unsigned char *ar) {
 	int i,x,  len = strlen(ar);
-    printf("Cipher-text: ");
+    printf("Cipher-text (Blocks): ");
     for (x=0; x < len;) {
         for (i=0; i < BLOCKSIZE; ++i) {
             printf("%.2x", ar[x++]);
         }
         printf(" ");
     }
+
+    printf("\nCipher-text: ");
+    for (x=0; x < len; ++x) {
+        printf("%.2x", ar[x]);
+    }
+
     printf("\n\n");
 
 	return;
@@ -435,6 +436,11 @@ void decryptAndParse(unsigned char *encrypted, unsigned char *encoded, const uns
 		printf("%c", encoded[i]);
 	}
 	printf("\n");
+    
+    Cookie *obj = (Cookie *) malloc(sizeof(Cookie));
+    parse(obj, encoded); 
+   
+   free(obj);
 	free(dec_context);
 
 	return;
