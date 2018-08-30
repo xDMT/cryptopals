@@ -376,7 +376,18 @@ int padBlock(char *input) {
 
 // Print encrypted string in hex
 void printEncArr(unsigned char *ar) {
-	int i,x,  len = strlen(ar);
+	int i,x,len;;
+    
+    // Need to get strlen to handle nulls in hex
+
+    for (len=0; ; ++len) {
+        if (ar[len] == '\0' && ar[len+1] == '\0' && ar[len+2] == '\0') {
+            break;
+        }
+    }
+
+
+
     printf("Cipher-text (Blocks): ");
     for (x=0; x < len;) {
         for (i=0; i < BLOCKSIZE; ++i) {
