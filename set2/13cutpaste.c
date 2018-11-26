@@ -376,7 +376,7 @@ int padBlock(char *input) {
 
 // Print encrypted string in hex
 void printEncArr(unsigned char *ar) {
-	int i,x,len;;
+	int i,x,len;
     
     // Need to get strlen to handle nulls in hex
 
