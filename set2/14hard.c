@@ -50,16 +50,12 @@ int main(int argc, char * argv[])
 
         // Prompt for input
         unsigned char initialBuf[BUF_LEN];
-        printf(">>");
-        
         i = 0;
-        while ((c = getchar()) != '\n') 
-        {
-            initialBuf[i++] = c;
-        }
-        len = i;
         
-
+        printf(">>");
+        len = getInput(initialBuf, i);
+        
+        // Determine special command entry on input ( clear screen, print key, exit )
         if (analyzeCommands(initialBuf)) {
             continue;
         }
@@ -89,42 +85,10 @@ int main(int argc, char * argv[])
         memcpy(inBlock, initialBuf, len);
         memcpy(inBlock+len, strAppendDecoded, i);
         
-        /////////////////////////////
-        //pad here
 
         if (len > 16)
         {
-
-            int blockSize = 16, i;
-
-            int len = strlen(initialBuf);
-            if (len % blockSize == 0)
-            {
-                break;
-            }  
-            // Determine padding amount by subtracting length
-            // from the largest nearest blockSize multiple
-            while (blockSize < len)
-            {
-                blockSize += 16;
-            }
-            int padding = blockSize - len;
-
-            // Create buffer with proper length for padded
-            // message
-            unsigned char * paddedMsg = malloc(len+padding);
-
-
-            // Read bytes into buffer and begin padding
-
-            memcpy(paddedMsg, initialBuf, len);
-            // Append bytes to end of original file
-            for (i = len; i < (len+padding); ++i)
-            {
-                paddedMsg[i] = (unsigned char) padding;
-            }
-            memcpy(initialBuf, paddedMsg, len+padding);
-            free(paddedMsg);
+            padblock(initialBuf, len);
         }
 
 
@@ -290,4 +254,50 @@ unsigned char * generateRandomBytes(int * len) {
     *len = i;
     return randomByteString;
 
+}
+
+
+
+
+void padBlock(unsigned char initialBuf[], int len) {
+    int blockSize = 16, i;
+
+    int len = strlen(initialBuf);
+    if (len % blockSize == 0)
+    {
+        break;
+    }  
+    // Determine padding amount by subtracting length
+    // from the largest nearest blockSize multiple
+    while (blockSize < len)
+    {
+        blockSize += 16;
+    }
+    int padding = blockSize - len;
+
+    // Create buffer with proper length for padded
+    // message
+    unsigned char * paddedMsg = malloc(len+padding);
+
+
+    // Read bytes into buffer and begin padding
+
+    memcpy(paddedMsg, initialBuf, len);
+    // Append bytes to end of original file
+    for (i = len; i < (len+padding); ++i)
+    {
+        paddedMsg[i] = (unsigned char) padding;
+    }
+    memcpy(initialBuf, paddedMsg, len+padding);
+    free(paddedMsg);
+    return;
+}
+
+
+int getInput(unsigned char initialBuf[], int i) {
+    while ((c = getchar()) != '\n') 
+    {
+        initialBuf[i++] = c;
+    }
+    return i;
 }
