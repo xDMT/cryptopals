@@ -14,11 +14,11 @@
 
 
 size_t b64decrypt(unsigned char * instr, unsigned char * b64decryptStr);
-unsigned char * padBlock(unsigned char * input);
 unsigned char * generateRandomBytes(int * len);
 void generateRandomKey(unsigned char key[]);
-
-
+int getInput(unsigned char initialBuf[], int i);
+void padBlock(unsigned char initialBuf[], int len);
+int analyzeCommands(unsigned char initialBuf[], unsigned char key[]);
 
 int main(int argc, char * argv[])
 {
@@ -47,30 +47,26 @@ int main(int argc, char * argv[])
     // Malloc a ton of bytes for initialize buffer, get length, malloc
     // new buffer, memcpy by len then delete other buffer
     while (1) {
-
-        // Prompt for input
         unsigned char initialBuf[BUF_LEN];
         i = 0;
-        
+
+        // Prompt for input
         printf(">>");
         len = getInput(initialBuf, i);
-        
+
         // Determine special command entry on input ( clear screen, print key, exit )
-        if (analyzeCommands(initialBuf)) {
+        if (analyzeCommands(initialBuf, key)) {
             continue;
         }
 
         // On blank entry, reuse last input, except increment to record for blocks
-        if (i == 0)
-        {
-            if ( loopcount != 0)
-            {
+        if (!i) {
+            if (loopcount) {
                 memcpy(initialBuf, reuse, reuselen);
                 len = reuselen;
             }
         }
-        else
-        {
+        else {
             memset(reuse, '\0', BUF_LEN);
             memcpy(reuse, initialBuf, i);
             reuselen = i;
@@ -78,17 +74,15 @@ int main(int argc, char * argv[])
         ++loopcount;
 
 
-        // New buffer for size 
+        // New buffer for size of input text + appended string
         i = strlen(strAppendDecoded); 
         unsigned char inBlock[i+len+1];
 
         memcpy(inBlock, initialBuf, len);
         memcpy(inBlock+len, strAppendDecoded, i);
         
-
-        if (len > 16)
-        {
-            padblock(initialBuf, len);
+        if (len > 16) {
+            padBlock(initialBuf, len);
         }
 
 
@@ -204,9 +198,9 @@ size_t b64decrypt(unsigned char * instr, unsigned char * b64decryptStr)
 	return f;
 }
 
-int analyzeCommands(unsigned char initialBuf[]) {
+int analyzeCommands(unsigned char initialBuf[], unsigned char key[]) {
 
-
+    int b;
     // Clear and exit
     if ((initialBuf[0] == 'c') && (initialBuf[1] == 'l'))
     {
@@ -262,10 +256,9 @@ unsigned char * generateRandomBytes(int * len) {
 void padBlock(unsigned char initialBuf[], int len) {
     int blockSize = 16, i;
 
-    int len = strlen(initialBuf);
-    if (len % blockSize == 0)
-    {
-        break;
+    len = strlen(initialBuf);
+    if (len % blockSize == 0) {
+        return;
     }  
     // Determine padding amount by subtracting length
     // from the largest nearest blockSize multiple
@@ -295,6 +288,7 @@ void padBlock(unsigned char initialBuf[], int len) {
 
 
 int getInput(unsigned char initialBuf[], int i) {
+    char c;
     while ((c = getchar()) != '\n') 
     {
         initialBuf[i++] = c;
