@@ -16,7 +16,7 @@
 size_t b64decrypt(unsigned char * instr, unsigned char * b64decryptStr);
 unsigned char * generateRandomBytes(int * len);
 void generateRandomKey(unsigned char key[]);
-int getInput(unsigned char initialBuf[], int i);
+int getInput(unsigned char initialBuf[], int * i);
 void padBlock(unsigned char initialBuf[], int len);
 int analyzeCommands(unsigned char initialBuf[], unsigned char key[]);
 
@@ -52,7 +52,7 @@ int main(int argc, char * argv[])
 
         // Prompt for input
         printf(">>");
-        len = getInput(initialBuf, i);
+        len = getInput(initialBuf, &i);
 
         // Determine special command entry on input ( clear screen, print key, exit )
         if (analyzeCommands(initialBuf, key)) {
@@ -287,11 +287,11 @@ void padBlock(unsigned char initialBuf[], int len) {
 }
 
 
-int getInput(unsigned char initialBuf[], int i) {
+int getInput(unsigned char initialBuf[], int * i) {
     char c;
     while ((c = getchar()) != '\n') 
     {
-        initialBuf[i++] = c;
+        initialBuf[(*i)++] = c;
     }
-    return i;
+    return *i;
 }
