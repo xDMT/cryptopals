@@ -9,7 +9,6 @@
 #include <mbedtls/aes.h>
 #define BUF_LEN 10000 
 
-// Refactor me... please
 
 
 
@@ -20,11 +19,13 @@ int getInput(unsigned char initialBuf[], int * i);
 void padBlock(unsigned char initialBuf[], int len);
 int analyzeCommands(unsigned char initialBuf[], unsigned char key[]);
 
+
+
 int main(int argc, char * argv[])
 {
 
     size_t len;
-    int i,b,b64decodeLen,ret,prependLen, reuselen, loopcount = 0;
+    int i,b,randomByteLen,b64decodeLen,ret,prependLen, reuselen, loopcount = 0;
     char c;
 
 
@@ -32,6 +33,7 @@ int main(int argc, char * argv[])
     unsigned char key[16], reuse[BUF_LEN];
     unsigned char * strPrepend = generateRandomBytes(&prependLen);
     unsigned char * initialBufb64 = (unsigned char *) malloc(BUF_LEN);
+    unsigned char * randBytes = generateRandomBytes(&randomByteLen);
     
     // Random key generation
     generateRandomKey(key);
@@ -74,12 +76,13 @@ int main(int argc, char * argv[])
         ++loopcount;
 
 
-        // New buffer for size of input text + appended string
+        // New buffer for size of input text + appended string + prependedString
         i = strlen(strAppendDecoded); 
-        unsigned char inBlock[i+len+1];
+        unsigned char inBlock[i+len+randomByteLen+1];
 
-        memcpy(inBlock, initialBuf, len);
-        memcpy(inBlock+len, strAppendDecoded, i);
+        memcpy(inBlock, randBytes, randomByteLen);
+        memcpy(inBlock+randomByteLen, initialBuf, len);
+        memcpy(inBlock+randomByteLen+len, strAppendDecoded, i);
         
         if (len > 16) {
             padBlock(initialBuf, len);
@@ -165,35 +168,29 @@ size_t b64decrypt(unsigned char * instr, unsigned char * b64decryptStr)
 
 
 
-	for (i = 0, f = 0; i < len; )
-	{
+	for (i = 0, f = 0; i < len; ) {
 		b64Read = 0;
-		for(z = 0; z < 8; ++i)
-		{
-			if (instr[i] != '\n')
-			{
+		for(z = 0; z < 8; ++i) {
+			if (instr[i] != '\n') {
 				tempbyte[z++] = instr[i];
 			}
 		}
-		for (z = 0, x = 6; z < 8; ++z)
-		{
+		for (z = 0, x = 6; z < 8; ++z) {
 			pch = strchr(b64, tempbyte[z]);
 			out = pch-b64;	
 			b64Read += out;
-			if (z < 7)
-			{
+			if (z < 7) {
 				b64Read = b64Read << x;
 			}
 		}
 
             // Refactored base64 decode
-        for (s = 40, andr = 0xFF0000000000; s >= 0; s -= 8)
-            {
-                hexOut = (b64Read & andr);
-                hexOut = hexOut >> s;
-                b64decryptStr[f++] = hexOut;
-                andr = andr >> 8;
-            }
+        for (s = 40, andr = 0xFF0000000000; s >= 0; s -= 8) {
+            hexOut = (b64Read & andr);
+            hexOut = hexOut >> s;
+            b64decryptStr[f++] = hexOut;
+            andr = andr >> 8;
+        }
 	}
 	return f;
 }
@@ -249,8 +246,6 @@ unsigned char * generateRandomBytes(int * len) {
     return randomByteString;
 
 }
-
-
 
 
 void padBlock(unsigned char initialBuf[], int len) {
