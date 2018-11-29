@@ -17,7 +17,7 @@ unsigned char * generateRandomBytes(int * len);
 void generateRandomKey(unsigned char key[]);
 int getInput(unsigned char initialBuf[], int * i);
 void padBlock(unsigned char initialBuf[], int len);
-int analyzeCommands(unsigned char initialBuf[], unsigned char key[]);
+int analyzeCommands(unsigned char initialBuf[], unsigned char key[], int * byteLen);
 
 
 
@@ -31,7 +31,6 @@ int main(int argc, char * argv[])
 
     unsigned char * strAppend = "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK";
     unsigned char key[16], reuse[BUF_LEN];
-    unsigned char * strPrepend = generateRandomBytes(&prependLen);
     unsigned char * initialBufb64 = (unsigned char *) malloc(BUF_LEN);
     unsigned char * randBytes = generateRandomBytes(&randomByteLen);
     
@@ -57,7 +56,7 @@ int main(int argc, char * argv[])
         len = getInput(initialBuf, &i);
 
         // Determine special command entry on input ( clear screen, print key, exit )
-        if (analyzeCommands(initialBuf, key)) {
+        if (analyzeCommands(initialBuf, key, &randomByteLen)) {
             continue;
         }
 
@@ -195,7 +194,7 @@ size_t b64decrypt(unsigned char * instr, unsigned char * b64decryptStr)
 	return f;
 }
 
-int analyzeCommands(unsigned char initialBuf[], unsigned char key[]) {
+int analyzeCommands(unsigned char initialBuf[], unsigned char key[], int * byteLen) {
 
     int b;
     // Clear and exit
@@ -217,6 +216,10 @@ int analyzeCommands(unsigned char initialBuf[], unsigned char key[]) {
         printf("\n");
         return 1;
     }
+    else if ((initialBuf[0] == 'b') && (initialBuf[1] == 'c')) {
+        printf("Byte Length ( cheater ) : %d\n", *byteLen);
+        return 1;
+    }
     return 0;
 }
 
@@ -234,11 +237,10 @@ void generateRandomKey(unsigned char key[]) {
 unsigned char * generateRandomBytes(int * len) {
     
     srand(time(NULL));
-    int byteCount = rand() % 256;
-    int i;
+    int i, byteCount = (rand() % 256);
 
-    unsigned char * randomByteString = (unsigned char *) malloc(sizeof(unsigned char)* byteCount );
-    for (int i=0; i < byteCount; ++i) {
+    unsigned char * randomByteString = (unsigned char *) malloc(sizeof(unsigned char)*byteCount );
+    for (i=0; i < byteCount; ++i) {
         
         randomByteString[i] = (unsigned char) rand() % 256;
     }
