@@ -84,7 +84,7 @@ int main(int argc, char * argv[])
         memcpy(inBlock+randomByteLen+len, strAppendDecoded, i);
         
         if (len > 16) {
-            padBlock(initialBuf, len);
+            padBlock(inBlock, len);
         }
 
 
