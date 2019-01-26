@@ -12,12 +12,9 @@
 
 
 
-size_t b64decrypt(unsigned char * instr, unsigned char * b64decryptStr);
-unsigned char * generateRandomBytes(int * len);
-void generateRandomKey(unsigned char key[]);
-int getInput(unsigned char initialBuf[], int * i);
-void padBlock(unsigned char initialBuf[], int len);
-int analyzeCommands(unsigned char initialBuf[], unsigned char key[], int * byteLen);
+size_t b64decrypt(unsigned char * b64, unsigned char * instr, unsigned char * b64decryptStr);
+unsigned char * padBlock(unsigned char * input);
+
 
 
 
@@ -25,49 +22,91 @@ int main(int argc, char * argv[])
 {
 
     size_t len;
-    int i,b,randomByteLen,b64decodeLen,ret,prependLen, reuselen, loopcount = 0;
+    int ret,b,i = 0;
     char c;
+    unsigned char * b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-
-    unsigned char * strAppend = "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK";
-    unsigned char key[16], reuse[BUF_LEN];
-    unsigned char * initialBufb64 = (unsigned char *) malloc(BUF_LEN);
-    unsigned char * randBytes = generateRandomBytes(&randomByteLen);
-    
     // Random key generation
-    generateRandomKey(key);
+    srand(time(NULL));
+    unsigned char key[16];
+    for (i = 0; i < 16; ++i)
+    {
+        key[i] = (rand() % 255);
+    }
+	
+	/*
+	* Addition: Adding random count of bytes to output to
+	* prepend to output
+	*/
+	int lim = rand() % 255;
+	unsigned char *str_prepend = (unsigned char *) calloc(sizeof(unsigned char*), lim);
+	for (i = 0; i < lim; ++i) {
+		str_prepend[i] = (rand() % 255);
+	}
+	 	
 
-    // Decode unknown string, copy to seperate buffer 'strAppendDecoded'
-    b64decodeLen = b64decrypt(strAppend, initialBufb64);
-    unsigned char * strAppendDecoded = (unsigned char * ) calloc(b64decodeLen+1, sizeof(unsigned char));
-    memcpy(strAppendDecoded, initialBufb64, b64decodeLen);
-    strAppendDecoded[b64decodeLen] = '\0';
+    // Unknown string
+    unsigned char * strAppend = "Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK";
+    unsigned char * initialBufb64 = malloc(BUF_LEN);
+    i = b64decrypt(b64, strAppend, initialBufb64);
+
+
+    // Load base64 decoded string into strAppendDecode
+    unsigned char * strAppendDecoded = calloc(i+1, sizeof(unsigned char));
+    memcpy(strAppendDecoded, initialBufb64, i);
     free(initialBufb64);
-
+    strAppendDecoded[i] = '\0';
 
     // Malloc a ton of bytes for initialize buffer, get length, malloc
     // new buffer, memcpy by len then delete other buffer
-    while (1) {
-        unsigned char initialBuf[BUF_LEN];
-        i = 0;
-
+    unsigned char reuse[BUF_LEN];
+    int reuselen, loopcount = 0;
+    while (1)
+    {
         // Prompt for input
+        unsigned char initialBuf[BUF_LEN];
         printf(">>");
-        len = getInput(initialBuf, &i);
+        
+		for (i = 0; i < lim; ++i) {
+			initialBuf[i] = str_prepend[i];
+		}
+        while ((c = getchar()) != '\n') 
+        {
+            initialBuf[i++] = c;
+        }
+        len = i;
+    
 
-        // Determine special command entry on input ( clear screen, print key, exit )
-        if (analyzeCommands(initialBuf, key, &randomByteLen)) {
+        // Clear and exit
+        if ((initialBuf[lim+0] == 'c') && (initialBuf[lim+1] == 'l'))
+        {
+            system("clear");
             continue;
         }
-
+        else if ((initialBuf[lim+0] == 'q') && (initialBuf[lim+1] == 'q'))
+        {
+            exit(0);
+        }
+        else if ((initialBuf[lim+0] == 'r') && (initialBuf[lim+1] == 'k'))
+        {
+            for (b = 0; b < 16; ++b)
+            {
+                printf("0x%x ", key[b]);
+            }
+            printf("\n");
+            continue;
+        }
         // On blank entry, reuse last input, except increment to record for blocks
-        if (!i) {
-            if (loopcount) {
+        if (i == 0)
+        {
+            if ( loopcount != 0)
+            {
                 memcpy(initialBuf, reuse, reuselen);
                 len = reuselen;
             }
         }
-        else {
+        else
+        {
             memset(reuse, '\0', BUF_LEN);
             memcpy(reuse, initialBuf, i);
             reuselen = i;
@@ -75,21 +114,65 @@ int main(int argc, char * argv[])
         ++loopcount;
 
 
-        // New buffer for size of input text + appended string + prependedString
+        // New buffer for size 
         i = strlen(strAppendDecoded); 
-        unsigned char inBlock[i+len+randomByteLen+1];
+        unsigned char inBlock[i+len+1];
 
-        memcpy(inBlock, randBytes, randomByteLen);
-        memcpy(inBlock+randomByteLen, initialBuf, len);
-        memcpy(inBlock+randomByteLen+len, strAppendDecoded, i);
+        memcpy(inBlock, initialBuf, len);
+        memcpy(inBlock+len, strAppendDecoded, i);
         
-        if (len > 16) {
-            padBlock(inBlock, len);
+        /////////////////////////////
+        //pad here
+
+        if (len > 16)
+        {
+
+            int blockSize = 16, i;
+
+            int len = strlen(initialBuf);
+            if (len % blockSize == 0)
+            {
+                break;
+            }  
+            // Determine padding amount by subtracting length
+            // from the largest nearest blockSize multiple
+            while (blockSize < len)
+            {
+                blockSize += 16;
+            }
+            int padding = blockSize - len;
+
+            // Create buffer with proper length for padded
+            // message
+            unsigned char * paddedMsg = malloc(len+padding);
+
+
+            // Read bytes into buffer and begin padding
+
+            memcpy(paddedMsg, initialBuf, len);
+            // Append bytes to end of original file
+            for (i = len; i < (len+padding); ++i)
+            {
+                paddedMsg[i] = (unsigned char) padding;
+            }
+            memcpy(initialBuf, paddedMsg, len+padding);
+            free(paddedMsg);
         }
+
+
+
+
+
+
+
 
 
         len += i+16;
         unsigned char  outBlock[len];
+
+
+
+
 
 
         // Define context structure for AES context 
@@ -154,141 +237,95 @@ int main(int argc, char * argv[])
 
 
 
-size_t b64decrypt(unsigned char * instr, unsigned char * b64decryptStr)
+size_t b64decrypt(unsigned char * b64, unsigned char * instr, unsigned char * b64decryptStr)
 {
 
+	int i, x, z, f,s,b;
 	unsigned char * tempbyte = calloc(9, sizeof(unsigned char));
-    unsigned char * b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	unsigned char * pch;
-	
-    int i, x, z, f,s,b;
 	u_int64_t b64Read, out, hexOut, andr;
-    size_t len = strlen(instr);	
+        size_t len = strlen(instr);	
 
 
 
-	for (i = 0, f = 0; i < len; ) {
+	for (i = 0, f = 0; i < len; )
+	{
 		b64Read = 0;
-		for(z = 0; z < 8; ++i) {
-			if (instr[i] != '\n') {
+		for(z = 0; z < 8; ++i)
+		{
+			if (instr[i] != '\n')
+			{
 				tempbyte[z++] = instr[i];
 			}
 		}
-		for (z = 0, x = 6; z < 8; ++z) {
+		for (z = 0, x = 6; z < 8; ++z)
+		{
 			pch = strchr(b64, tempbyte[z]);
 			out = pch-b64;	
 			b64Read += out;
-			if (z < 7) {
+			if (z < 7)
+			{
 				b64Read = b64Read << x;
 			}
 		}
 
-            // Refactored base64 decode
-        for (s = 40, andr = 0xFF0000000000; s >= 0; s -= 8) {
-            hexOut = (b64Read & andr);
-            hexOut = hexOut >> s;
-            b64decryptStr[f++] = hexOut;
-            andr = andr >> 8;
-        }
+                        // Refactored base64 decode
+	                for (s = 40, andr = 0xFF0000000000; s >= 0; s -= 8)
+                        {
+                            hexOut = (b64Read & andr);
+                            hexOut = hexOut >> s;
+                            b64decryptStr[f++] = hexOut;
+                            andr = andr >> 8;
+                        }
+
+
+// A look at my old base64 decoding function just for lelz.. Growth 
+/*
+			hexOut = (b64Read & 0b0000000000000000111111110000000000000000000000000000000000000000);
+			hexOut = hexOut >> 40;
+			b64decryptSt[f++] = hexOut;
+		
+
+			hexOut = (b64Read & 0b0000000000000000000000001111111100000000000000000000000000000000);
+			hexOut = hexOut >> 32;
+			b64decryptStr[f++] = hexOut;
+
+
+			hexOut = (b64Read & 0b0000000000000000000000000000000011111111000000000000000000000000);
+			hexOut = hexOut >> 24;
+			b64decryptStr[f++] = hexOut;
+
+			hexOut = (b64Read & 0b0000000000000000000000000000000000000000111111110000000000000000);
+			hexOut = hexOut >> 16;
+			b64decryptStr[f++] = hexOut;
+
+			hexOut = (b64Read & 0b0000000000000000000000000000000000000000000000001111111100000000);
+			hexOut = hexOut >> 8;
+			b64decryptStr[f++] = hexOut;
+
+
+			hexOut = (b64Read & 0b0000000000000000000000000000000000000000000000000000000011111111);
+			b64decryptStr[f++] = hexOut;
+*/
+
 	}
 	return f;
 }
 
-int analyzeCommands(unsigned char initialBuf[], unsigned char key[], int * byteLen) {
-
-    int b;
-    // Clear and exit
-    if ((initialBuf[0] == 'c') && (initialBuf[1] == 'l'))
-    {
-        system("clear");
-        return 1;
-    }
-    else if ((initialBuf[0] == 'q') && (initialBuf[1] == 'q'))
-    {
-        exit(0);
-    }
-    else if ((initialBuf[0] == 'r') && (initialBuf[1] == 'k'))
-    {
-        for (b = 0; b < 16; ++b)
-        {
-            printf("0x%x ", key[b]);
-        }
-        printf("\n");
-        return 1;
-    }
-    else if ((initialBuf[0] == 'b') && (initialBuf[1] == 'c')) {
-        printf("Byte Length ( cheater ) : %d\n", *byteLen);
-        return 1;
-    }
-    return 0;
-}
 
 
 
-void generateRandomKey(unsigned char key[]) {
-    int i;
-    srand(time(NULL));
-    for (i = 0; i < 16; ++i) {
-        key[i] = (rand() % 255);
-    }
-}
 
 
-unsigned char * generateRandomBytes(int * len) {
-    
-    srand(time(NULL));
-    int i, byteCount = (rand() % 256);
-
-    unsigned char * randomByteString = (unsigned char *) malloc(sizeof(unsigned char)*byteCount );
-    for (i=0; i < byteCount; ++i) {
-        
-        randomByteString[i] = (unsigned char) rand() % 256;
-    }
-    *len = i;
-    return randomByteString;
-
-}
 
 
-void padBlock(unsigned char initialBuf[], int len) {
-    int blockSize = 16, i;
-
-    len = strlen(initialBuf);
-    if (len % blockSize == 0) {
-        return;
-    }  
-    // Determine padding amount by subtracting length
-    // from the largest nearest blockSize multiple
-    while (blockSize < len)
-    {
-        blockSize += 16;
-    }
-    int padding = blockSize - len;
-
-    // Create buffer with proper length for padded
-    // message
-    unsigned char * paddedMsg = malloc(len+padding);
 
 
-    // Read bytes into buffer and begin padding
-
-    memcpy(paddedMsg, initialBuf, len);
-    // Append bytes to end of original file
-    for (i = len; i < (len+padding); ++i)
-    {
-        paddedMsg[i] = (unsigned char) padding;
-    }
-    memcpy(initialBuf, paddedMsg, len+padding);
-    free(paddedMsg);
-    return;
-}
 
 
-int getInput(unsigned char initialBuf[], int * i) {
-    char c;
-    while ((c = getchar()) != '\n') 
-    {
-        initialBuf[(*i)++] = c;
-    }
-    return *i;
-}
+
+
+
+
+
+
