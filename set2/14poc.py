@@ -7,7 +7,7 @@ import pexpect, time, pdb
 # in the first block
 #
 # Challenge 14 no longer provides us that advantage, as we now have a random count of bytes
-# prepend to our input
+# prepended to our input
 #
 # Though as stated in the challenge, no further tools are needed for executing our chosen-plaintext
 # attack. All we have to do is simply determine the byte count prepended to our input. As soon as we
@@ -25,15 +25,15 @@ import pexpect, time, pdb
 # From this, we know that the first 4 blocks of ciphertext we can ignore completely, as they will
 # remain constant throughout the attack.
 # 
-# We also know that there 9 bytes between the end of the prepended string and the start of the next
+# We also know that there are 9 bytes between the end of the prepended string and the start of the next
 # cipher block. 
 # 
 # If we provide 9 bytes of input to the ciphertext, we are now in the same position as we were in
-# challenge 12, that is our put ( after 9 bytes ) will have a direct impact on the the ciphertext
+# challenge 12, that is, our input ( after 9 bytes ) will have a direct impact on the the ciphertext
 # containing the message we wish to decrypt.
 #
-# Thus we can begin the attack with suppling 9 + 15 bytes, forcing the following block to give the
-# first character of our target to be the last character in a block we have specially crafted
+# Thus we can begin the attack with suppling 9 + 15 bytes, forcing the following block to provide the
+# first character of our target mesage to be the last character in our block we have specially crafted
 #
 #   AAAAAAAAAAAAAAAX   <- With X being our target byte. 
 #   
