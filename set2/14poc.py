@@ -1,5 +1,3 @@
-import pexpect, time, pdb
-
 # Proof of Concept
 #
 # The goal of challenge 14 is very similar to challenge 12. Though in challenge 12,
@@ -46,10 +44,17 @@ import pexpect, time, pdb
 # script to automate this process for us, and we can watch in real time the process of the chosen
 # plaintext attack
 #
+
+import pexpect, time, pdb
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4)
 prog = pexpect.spawn("./a.out")
 prog.setecho(True)
 x = 0
-str_in = "a"
+str_in = "A"
+block_list = {}
+
 while True:
     prog.sendline(str_in)
     str_in += "a"
@@ -58,7 +63,9 @@ while True:
             x = 0
             break
         out = prog.readline().decode()
-        print(out,end="")
+        if out.find("Block") != -1:
+            block_list[out.split(':')[0]] = out.split(':')[1].replace('\n','').replace('\r','')
+            
         if out.find(">>") != -1:
             if x == 1:
                 break
