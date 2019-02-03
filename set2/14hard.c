@@ -217,7 +217,12 @@ int main(int argc, char * argv[])
         int z, r = 0;
         for (i = 0; r < len; ++i)
         {
-            printf("Block %d:", i);
+            if (i < 10) {
+                printf("Block %d :", i);
+            }
+            else {
+                printf("Block %d:", i);
+            }
             for (z = 0; z < 16; ++z,++r)
             {
             printf("%x", outBlock[r]);    
