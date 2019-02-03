@@ -38,7 +38,10 @@ int main(int argc, char * argv[])
 	* Addition: Adding random count of bytes to output to
 	* prepend to output
 	*/
-	int lim = rand() % 255;
+    int lim = 0;
+    while (lim < 16) {
+        lim = rand() % 255;
+    }
 	unsigned char *str_prepend = (unsigned char *) calloc(sizeof(unsigned char*), lim);
 	for (i = 0; i < lim; ++i) {
 		str_prepend[i] = (rand() % 255);
