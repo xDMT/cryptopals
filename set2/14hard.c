@@ -85,6 +85,7 @@ int main(int argc, char * argv[])
         }
         else if ((initialBuf[lim+0] == 'q') && (initialBuf[lim+1] == 'q'))
         {
+            printf("Clean exit from trigger on %c and %c\n", initialBuf[lim+0], initialBuf[lim+1]);
             exit(0);
         }
         else if ((initialBuf[lim+0] == 'r') && (initialBuf[lim+1] == 'k'))
@@ -130,33 +131,33 @@ int main(int argc, char * argv[])
             int blockSize = 16, i;
 
             int len = strlen(initialBuf);
-            if (len % blockSize == 0)
+            if (len % blockSize)
             {
-                break;
-            }  
-            // Determine padding amount by subtracting length
-            // from the largest nearest blockSize multiple
-            while (blockSize < len)
-            {
-                blockSize += 16;
+                    
+                // Determine padding amount by subtracting length
+                // from the largest nearest blockSize multiple
+                while (blockSize < len)
+                {
+                    blockSize += 16;
+                }
+                int padding = blockSize - len;
+
+                // Create buffer with proper length for padded
+                // message
+                unsigned char * paddedMsg = malloc(len+padding);
+
+
+                // Read bytes into buffer and begin padding
+
+                memcpy(paddedMsg, initialBuf, len);
+                // Append bytes to end of original file
+                for (i = len; i < (len+padding); ++i)
+                {
+                    paddedMsg[i] = (unsigned char) padding;
+                }
+                memcpy(initialBuf, paddedMsg, len+padding);
+                free(paddedMsg);
             }
-            int padding = blockSize - len;
-
-            // Create buffer with proper length for padded
-            // message
-            unsigned char * paddedMsg = malloc(len+padding);
-
-
-            // Read bytes into buffer and begin padding
-
-            memcpy(paddedMsg, initialBuf, len);
-            // Append bytes to end of original file
-            for (i = len; i < (len+padding); ++i)
-            {
-                paddedMsg[i] = (unsigned char) padding;
-            }
-            memcpy(initialBuf, paddedMsg, len+padding);
-            free(paddedMsg);
         }
 
 
@@ -231,7 +232,7 @@ int main(int argc, char * argv[])
 
 
 
-
+    printf("Returning gracefully\n");
 	return 0;
 }
 
