@@ -56,8 +56,9 @@ str_in = "A"
 block_list = {}
 block_list_last = {}
 static_blocks = []
-
-for y in range(0,1000):
+z = 0
+for y in range(0,100):
+    z += 1
     prog.sendline(str_in)
     str_in += "a"
     for y in range(0,1000):
@@ -84,6 +85,17 @@ for y in range(0,1000):
                 break
             else:
                 x += 1
+
+    # Detect the entry block
+    if len(static_blocks) != 0:
+        last_block = static_blocks[len(static_blocks)-1]
+        next_block_num = int(last_block[len(last_block)-2])+1
+        next_block = "Block " + str(next_block_num) + " "
+        entry_block_val = block_list[next_block] 
+        print("Entry block is " + next_block + ": " + entry_block_val)
+    time.sleep(.2)
+
+        
 
     
 
