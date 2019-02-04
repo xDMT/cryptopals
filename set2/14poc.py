@@ -46,7 +46,7 @@
 #
 
 import pexpect, time, pdb
-import pprint
+import pprint, os
 
 pp = pprint.PrettyPrinter(indent=4)
 prog = pexpect.spawn("./a.out")
@@ -54,20 +54,41 @@ prog.setecho(True)
 x = 0
 str_in = "A"
 block_list = {}
+block_list_last = {}
+static_blocks = []
 
-while True:
+for y in range(0,1000):
     prog.sendline(str_in)
     str_in += "a"
-    while True:
+    for y in range(0,1000):
         if prog.before is not None and prog.before.decode() != ">>" and x != 0:
             x = 0
             break
         out = prog.readline().decode()
         if out.find("Block") != -1:
             block_list[out.split(':')[0]] = out.split(':')[1].replace('\n','').replace('\r','')
-            
+
+            # Compare blocks for changes
+            if out.split(':')[0] not in block_list_last:
+                block_list_last[out.split(':')[0]] = out.split(':')[1].replace('\n','').replace('\r','')
+            else:
+                if block_list_last[out.split(':')[0]] == block_list[out.split(':')[0]]:
+                    if out.split(':')[0] not in static_blocks:
+                        static_blocks.append(out.split(':')[0])
+        
+        print('\033c')
+        pp.pprint(block_list)
+        pp.pprint(static_blocks) 
         if out.find(">>") != -1:
             if x == 1:
                 break
             else:
                 x += 1
+
+    
+
+
+
+
+
+
