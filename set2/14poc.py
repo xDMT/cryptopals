@@ -57,6 +57,7 @@ block_list = {}
 block_list_last = {}
 static_blocks = []
 z = 0
+entry_block_val_last = None
 for y in range(0,100):
     z += 1
     prog.sendline(str_in)
@@ -93,7 +94,16 @@ for y in range(0,100):
         next_block = "Block " + str(next_block_num) + " "
         entry_block_val = block_list[next_block] 
         print("Entry block is " + next_block + ": " + entry_block_val)
-    time.sleep(.2)
+        if entry_block_val_last is None:
+            entry_block_val_last = entry_block_val
+        else:
+            if entry_block_val_last == entry_block_val:
+                print("Byte count for injection is: " + str(z))
+                break
+            else:
+                entry_block_val_last = entry_block_val
+        
+    time.sleep(1)
 
         
 
