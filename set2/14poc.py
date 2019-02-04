@@ -78,9 +78,12 @@ for y in range(0,100):
                     if out.split(':')[0] not in static_blocks:
                         static_blocks.append(out.split(':')[0])
         
-        print('\033c')
-        pp.pprint(block_list)
-        pp.pprint(static_blocks) 
+        if len(block_list) != 0:
+            print('\033c')
+            pp.pprint(block_list)
+        if len(static_blocks) != 0:
+            print("\n\nStatic Blocks:\n---------------")
+            pp.pprint(static_blocks) 
         if out.find(">>") != -1:
             if x == 1:
                 break
@@ -93,17 +96,57 @@ for y in range(0,100):
         next_block_num = int(last_block[len(last_block)-2])+1
         next_block = "Block " + str(next_block_num) + " "
         entry_block_val = block_list[next_block] 
-        print("Entry block is " + next_block + ": " + entry_block_val)
+        print("Entry block is " + next_block + ": " + entry_block_val + "\n\n")
         if entry_block_val_last is None:
             entry_block_val_last = entry_block_val
         else:
             if entry_block_val_last == entry_block_val:
+                z -= 1
                 print("Byte count for injection is: " + str(z))
                 break
             else:
                 entry_block_val_last = entry_block_val
         
-    time.sleep(1)
+
+next_block_num += 1
+next_block = "Block " + str(next_block_num)
+
+# Now begin attack
+str_attack_basis = ""
+for d in range(0,z):
+    str_attack_basis += "A"
+str_attack = ""
+attack_counter = 15
+while True:
+    for d in range(0,attack_counter):
+        str_attack += "A"
+    str_attack += str_attack_basis
+    prog.sendline(str_attack)
+
+    block_pos = 0
+    while True:
+        out = prog.readline().decode()
+        if out.find(next_block) != -1:
+            break
+        block_pos += 1
+
+    basis_cipher = out.split(':')[1].replace('\n','').replace('\r','')
+    compare_cipher = ""
+    for c in range(0x0, 0xFF):
+        prog.sendline(str_attack + chr(c))
+        for r in range(0, block_pos):
+            compare_cipher = prog.readline().decode().replace('\n','').replace('\r','')
+            try: 
+                compare_cipher = compare_cipher.split(':')[1]
+            except:
+                pass
+        if compare_cipher == basis_cipher:
+            print(c)
+            break
+    attack_counter -= 1
+    if attack_counter == 0:
+        attack_counter = 15
+
 
         
 
