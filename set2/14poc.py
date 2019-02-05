@@ -48,6 +48,7 @@
 import pexpect, time, pdb
 import pprint, os
 
+final_msg = ""
 pp = pprint.PrettyPrinter(indent=4)
 prog = pexpect.spawn("./a.out")
 prog.setecho(True)
@@ -61,7 +62,7 @@ entry_block_val_last = None
 for y in range(0,100):
     z += 1
     prog.sendline(str_in)
-    str_in += "a"
+    str_in += "A"
     for y in range(0,1000):
         if prog.before is not None and prog.before.decode() != ">>" and x != 0:
             x = 0
@@ -93,8 +94,11 @@ for y in range(0,100):
     # Detect the entry block
     if len(static_blocks) != 0:
         last_block = static_blocks[len(static_blocks)-1]
-        next_block_num = int(last_block[len(last_block)-2])+1
-        next_block = "Block " + str(next_block_num) + " "
+        next_block_num = int(last_block[len(last_block)-2:len(last_block)])+1
+        if next_block_num > 9:
+            next_block = "Block " + str(next_block_num)
+        else:
+            next_block = "Block " + str(next_block_num) + " "
         entry_block_val = block_list[next_block] 
         print("Entry block is " + next_block + ": " + entry_block_val + "\n\n")
         if entry_block_val_last is None:
@@ -108,49 +112,89 @@ for y in range(0,100):
                 entry_block_val_last = entry_block_val
         
 
-next_block_num += 1
+#next_block_num += 1
 next_block = "Block " + str(next_block_num)
 
-# Now begin attack
-str_attack_basis = ""
-for d in range(0,z):
-    str_attack_basis += "A"
+
+x = 0
+# Form prepend attack string
 str_attack = ""
+for r in range(0,z):
+    str_attack += "A"
 attack_counter = 15
+# Begin attack
 while True:
-    for d in range(0,attack_counter):
+    for r in range(0, attack_counter):
         str_attack += "A"
-    str_attack += str_attack_basis
     prog.sendline(str_attack)
+    block_list = []
+    # Get response ( block list ) 
 
-    block_pos = 0
     while True:
+        if prog.before is not None and prog.before.decode() != ">>" and x != 0:
+            x = 0
+            break
         out = prog.readline().decode()
-        if out.find(next_block) != -1:
-            break
-        block_pos += 1
-
-    basis_cipher = out.split(':')[1].replace('\n','').replace('\r','')
-    compare_cipher = ""
-    for c in range(0x0, 0xFF):
-        prog.sendline(str_attack + chr(c))
-        for r in range(0, block_pos):
-            compare_cipher = prog.readline().decode().replace('\n','').replace('\r','')
-            try: 
-                compare_cipher = compare_cipher.split(':')[1]
-            except:
-                pass
-        if compare_cipher == basis_cipher:
-            print(c)
-            break
-    attack_counter -= 1
-    if attack_counter == 0:
-        attack_counter = 15
-
-
-        
-
+        if out.find(">>") != -1:
+            if x == 1:
+                break
+            else:
+                x += 1
+        block_list.append(out)
     
+    for block in block_list:
+        if block.find(next_block) != -1:
+            out = block.replace('\n','').replace('\r','')
+            break
+        
+    basis_cipher = out.split(':')[1]
+   
+    # Collected basis cipher block, now bruteforce the block
+    for g in range(0x20, 0x7E):
+        if g == 0x4:
+            #pdb.set_trace()
+            pass
+        prog.sendline(str_attack + chr(g))
+        #print("Sending attack string : " + str_attack + chr(g))
+        block_list.clear()
+
+        x = 0
+        while True:
+            if prog.before is not None and prog.before.decode() != ">>" and x != 0:
+                x = 0
+                break
+            out = prog.readline().decode()
+            if len(out) == 0:
+                break
+            if out.find(">>") != -1:
+                if x == 1:
+                    break
+                else:
+                    x += 1
+            block_list.append(out)
+        
+        for block in block_list:
+            if block.find(next_block) != -1:
+                out = block.replace('\n','').replace('\r','')
+                break
+        
+        if len(out) != 0:
+            compare_cipher = out.split(':')[1]
+        else: 
+            continue
+        #print("Basis cipher for attack vector " + chr(g) + " :" + basis_cipher)
+        #print("Compare  cipher for attack vector " + chr(g) + " :" + compare_cipher)
+        #print(" ")
+
+        if basis_cipher == compare_cipher:
+            final_msg += chr(g)
+            print("Found character : " + chr(g))
+            str_attack = ""
+            attack_counter -= 1
+            break
+
+
+
 
 
 
