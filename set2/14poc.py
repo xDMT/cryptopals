@@ -48,6 +48,20 @@
 import pexpect, time, pdb
 import pprint, os
 
+def org_pretty_print(l):
+    ll = len(l)
+    key_list = l.keys()
+    for ff in range(0,len(l)):
+        for key in key_list:
+            if int(key[len(key)-2:len(key)]) == ff:
+                    print(key + ": " + l[key])
+
+
+
+
+
+
+
 final_msg = ""
 pp = pprint.PrettyPrinter(indent=4)
 prog = pexpect.spawn("./a.out")
@@ -60,6 +74,7 @@ static_blocks = []
 z = 0
 entry_block_val_last = None
 for y in range(0,100):
+    time.sleep(1)
     z += 1
     prog.sendline(str_in)
     str_in += "A"
@@ -81,7 +96,7 @@ for y in range(0,100):
         
         if len(block_list) != 0:
             print('\033c')
-            pp.pprint(block_list)
+            org_pretty_print(block_list)
         if len(static_blocks) != 0:
             print("\n\nStatic Blocks:\n---------------")
             pp.pprint(static_blocks) 
@@ -111,7 +126,7 @@ for y in range(0,100):
             else:
                 entry_block_val_last = entry_block_val
         
-
+quit()
 #next_block_num += 1
 next_block = "Block " + str(next_block_num)
 
@@ -119,11 +134,12 @@ next_block = "Block " + str(next_block_num)
 x = 0
 # Form prepend attack string
 str_attack = ""
-for r in range(0,z):
+for r in range(0,z+1):
     str_attack += "A"
 attack_counter = 15
 # Begin attack
 while True:
+    print("Attack counter reset: " + str(attack_counter))
     for r in range(0, attack_counter):
         str_attack += "A"
     prog.sendline(str_attack)
@@ -155,7 +171,7 @@ while True:
             #pdb.set_trace()
             pass
         prog.sendline(str_attack + chr(g))
-        #print("Sending attack string : " + str_attack + chr(g))
+        print("Sending attack string : " + str_attack + chr(g))
         block_list.clear()
 
         x = 0
@@ -182,17 +198,17 @@ while True:
             compare_cipher = out.split(':')[1]
         else: 
             continue
-        #print("Basis cipher for attack vector " + chr(g) + " :" + basis_cipher)
-        #print("Compare  cipher for attack vector " + chr(g) + " :" + compare_cipher)
-        #print(" ")
+        print("Basis cipher for attack vector " + chr(g) + " :" + basis_cipher)
+        print("Compare  cipher for attack vector " + chr(g) + " :" + compare_cipher)
+        print(" ")
 
-        if basis_cipher == compare_cipher:
+        if basis_cipher == compare_cipher and chr(g) != " ":
             final_msg += chr(g)
             print("Found character : " + chr(g))
             str_attack = ""
             attack_counter -= 1
             break
-
+    time.sleep(.5)
 
 
 
