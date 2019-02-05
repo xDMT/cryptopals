@@ -11,12 +11,25 @@ void output_validity(unsigned char* padded_str, bool* valid);
 
 
 int main() {
-    
+    int i; 
     bool valid = false;
     unsigned char *test1 = "This is valid padding\x000B\x000B\x000B\x000B\x000B" \
                             "\x000B\x000B\x000B\x000B\x000B\x000B";
+    unsigned char *test2 = "This is invalid padding\x0007\x000B\x000B\x000B\x000B" \
+                            "\x000B\x0003\x000B\x000B\x000B\x000B";
+    unsigned char *test3 = "This is valid padding\x0007\x0007\x0007\x0007\x0007" \
+                            "\x0007\x0007";
+    unsigned char *test4 = "This is invalid padding\x000B\x000B\x000B\x000B\x000B" \
+                            "\x000B\x000B\x000B\x000B\x000B";
+    unsigned char *test5 = "This is valid padding\x000A\x000A\x000A\x000A\x000A" \
+                            "\x000A\x000A\x000A\x000A\x000A";
     
-    output_validity(test1, &valid);
+    unsigned char * test_cases[] = { 
+        test1, test2, test3, test4, test5
+    };
+    for (i=0; i < 5; i++) {
+        output_validity(test_cases[i], &valid);
+    }
     
     
     return 0;
