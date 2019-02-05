@@ -74,7 +74,7 @@ static_blocks = []
 z = 0
 entry_block_val_last = None
 for y in range(0,100):
-    time.sleep(1)
+    time.sleep(.25)
     z += 1
     prog.sendline(str_in)
     str_in += "A"
@@ -120,32 +120,31 @@ for y in range(0,100):
             entry_block_val_last = entry_block_val
         else:
             if entry_block_val_last == entry_block_val:
-                z -= 1
+                #z -= 1
                 print("Byte count for injection is: " + str(z))
                 break
             else:
                 entry_block_val_last = entry_block_val
         
-quit()
-#next_block_num += 1
+next_block_num += 2
 next_block = "Block " + str(next_block_num)
 
 
 x = 0
-# Form prepend attack string
-str_attack = ""
-for r in range(0,z+1):
-    str_attack += "A"
-attack_counter = 15
-# Begin attack
 while True:
-    print("Attack counter reset: " + str(attack_counter))
-    for r in range(0, attack_counter):
-        str_attack += "A"
-    prog.sendline(str_attack)
-    block_list = []
-    # Get response ( block list ) 
 
+    
+    str_attack = ""
+    attack_counter = 15
+    for r in range(0,z+attack_counter+1):
+        str_attack += "A"
+   
+    print("Sending attack string: " + str_attack)
+    prog.sendline(str_attack)
+
+
+    # Get response ( block list ) 
+    block_list = []
     while True:
         if prog.before is not None and prog.before.decode() != ">>" and x != 0:
             x = 0
@@ -157,23 +156,28 @@ while True:
             else:
                 x += 1
         block_list.append(out)
-    
+   
+    # Get value of block with forced character
     for block in block_list:
         if block.find(next_block) != -1:
             out = block.replace('\n','').replace('\r','')
+            print("Getting basis block: " + out)
             break
-        
     basis_cipher = out.split(':')[1]
-   
+    
+  
+
     # Collected basis cipher block, now bruteforce the block
     for g in range(0x20, 0x7E):
         if g == 0x4:
             #pdb.set_trace()
             pass
         prog.sendline(str_attack + chr(g))
-        print("Sending attack string : " + str_attack + chr(g))
+        print('\033c')
+        print("Sending attack string: " + str_attack + chr(g))
+        #pdb.set_trace()
         block_list.clear()
-
+    
         x = 0
         while True:
             if prog.before is not None and prog.before.decode() != ">>" and x != 0:
@@ -192,15 +196,18 @@ while True:
         for block in block_list:
             if block.find(next_block) != -1:
                 out = block.replace('\n','').replace('\r','')
+                print("Getting basis block: " + basis_cipher)
+                print("Getting compare block: " + out + "\n")
                 break
         
         if len(out) != 0:
             compare_cipher = out.split(':')[1]
         else: 
             continue
-        print("Basis cipher for attack vector " + chr(g) + " :" + basis_cipher)
-        print("Compare  cipher for attack vector " + chr(g) + " :" + compare_cipher)
-        print(" ")
+        #print("Basis cipher for attack vector " + chr(g) + " :" + basis_cipher)
+        #print("Compare  cipher for attack vector " + chr(g) + " :" + compare_cipher)
+        #print(" ")
+        #time.sleep(.5)
 
         if basis_cipher == compare_cipher and chr(g) != " ":
             final_msg += chr(g)
@@ -208,7 +215,6 @@ while True:
             str_attack = ""
             attack_counter -= 1
             break
-    time.sleep(.5)
 
 
 
