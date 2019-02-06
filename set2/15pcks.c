@@ -7,7 +7,7 @@
 #define bool int
 
 unsigned char * pkcs_validate(unsigned char* padded_str, bool* valid);
-void output_validity(unsigned char* padded_str, bool* valid);
+bool output_validity(unsigned char* padded_str, bool* valid);
 
 
 int main() {
@@ -46,7 +46,7 @@ unsigned char * pkcs_validate(unsigned char* padded_str, bool* valid) {
 
     memcpy(new_str, padded_str, len);
     if (pad_val == 0x1) {
-        padded_str[len-1] = '\0';
+        new_str[len-1] = '\0';
         *valid = true;
         return new_str;
     }
@@ -68,14 +68,16 @@ unsigned char * pkcs_validate(unsigned char* padded_str, bool* valid) {
 }
 
 
-void output_validity(unsigned char* padded_str, bool* valid) {
+bool output_validity(unsigned char* padded_str, bool* valid) {
     
     padded_str = pkcs_validate(padded_str, valid);
-    if (valid) {
+    if (*valid) {
         printf("Padding is valid for string: %s\n", padded_str);
+        return true;
     }
     else {
         printf("Padding not valid\n");
+        return false;
     }
     free(padded_str);
 
