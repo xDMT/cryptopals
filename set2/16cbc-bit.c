@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <assert.h>
 #include <mbedtls/aes.h>
 
 #define true 1
@@ -8,20 +10,66 @@
 #define bool int
 
 unsigned char * pkcs_validate(unsigned char* padded_str, bool* valid);
-bool output_validity(unsigned char* padded_str, bool* valid);
+bool output_validity(unsigned char* padded_str);
 mbedtls_aes_context * aesInit();
 unsigned char * collect_input();
 unsigned char * prepend_append(unsigned char *input);
+unsigned char * generate_key();
+unsigned char * cbc_encrypt_string(unsigned char *in, unsigned char *key);
 
 
 int main() {
-    
+
+    unsigned char *key = generateKey();
     unsigned char *in = collect_input();
-    printf("%s\n", in);
+
+
+
+
     free(in);
    
     return 0;
 }
+
+unsigned char * cbc_encrypt_string(unsigned char *in, unsigned char *key) {
+    
+    assert(!(strlen(in) % 16))
+    int i,x,y,z;
+    unsigned char iv[16], in_buf[16], out_buf[16];
+    
+    for (i = 0; i < 16; ++i) {
+        iv[i] = '\x00';
+    }
+    for (i = 0; i < strlen(in); i += 16) {
+        memcpy(in_buf, in+i, 16);
+
+        // xor with iv
+        for (x=0; x < 16; x++) {
+            in_buf ^= iv[x];
+        }
+
+
+
+
+    
+    
+
+
+unsigned char * generate_key() {
+    
+    int i; 
+    unsigned char *key = (unsigned char *) calloc(16,sizeof(unsigned char));
+    srand(time(NULL));
+    
+    for (i=0; i < 16; i++) {
+        key[i] = (unsigned char) rand() % 256;
+    }
+    return key;
+}
+
+unsigned char * 
+
+
 
 
 unsigned char * pad_string(unsigned char *input) {
@@ -117,10 +165,11 @@ unsigned char * pkcs_validate(unsigned char* padded_str, bool* valid) {
 }
 
 
-bool output_validity(unsigned char* padded_str, bool* valid) {
+bool output_validity(unsigned char* padded_str) {
     
-    padded_str = pkcs_validate(padded_str, valid);
-    if (*valid) {
+    int valid = false;
+    padded_str = pkcs_validate(padded_str, &valid);
+    if (valid) {
         printf("Padding is valid for string: %s\n", padded_str);
         return true;
     }
