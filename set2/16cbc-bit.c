@@ -16,10 +16,29 @@ unsigned char * prepend_append(unsigned char *input);
 
 int main() {
     
-    unsigned char *test = collect_input();
-    printf("%s\n", test);
+    unsigned char *in = collect_input();
+    printf("%s\n", in);
+    free(in);
    
     return 0;
+}
+
+
+unsigned char * pad_string(unsigned char *input) {
+
+    int i;
+    size_t in_len = strlen(input);
+    size_t pad_len = in_len  % 16;
+    unsigned char * pad_buffer = (unsigned char *) calloc(strlen(input) + pad_len,
+            sizeof(unsigned char));
+    
+    strcpy(pad_buffer,input);
+    for (i=in_len; i < in_len+pad_len; i++) {
+        pad_buffer[i] = (unsigned char) pad_len;
+    }
+    
+    free(input);
+    return pad_buffer;
 }
 
 
@@ -59,9 +78,10 @@ unsigned char * collect_input() {
 
     free(initial_buffer);
     unsigned char *final_str = prepend_append(buffer);
+    unsigned char *final_str_padded = pad_string(final_str);
     free(buffer);
 
-    return final_str;
+    return final_str_padded;
 }
 
 
