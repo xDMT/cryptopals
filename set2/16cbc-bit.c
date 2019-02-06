@@ -11,16 +11,19 @@ unsigned char * pkcs_validate(unsigned char* padded_str, bool* valid);
 bool output_validity(unsigned char* padded_str, bool* valid);
 mbedtls_aes_context * aesInit();
 unsigned char * collect_input();
+unsigned char * prepend_append(unsigned char *input);
 
 
 int main() {
     
+    unsigned char *test = collect_input();
+    printf("%s\n", test);
    
     return 0;
 }
 
 
-void prepend_append(unsigned char *input) {
+unsigned char * prepend_append(unsigned char *input) {
 
     unsigned char *prepend = "comment1=cooking%20MCs;userdata=";
     unsigned char *append = ";comment2=%20like%20a%20pound%20of%20bacon";
@@ -30,9 +33,9 @@ void prepend_append(unsigned char *input) {
 
     strcpy(modified_string, prepend);
     strcpy(modified_string+strlen(prepend), input);
-    strcpy(modified_string+strlen(prepend)+strlen(input), input);
+    strcpy(modified_string+strlen(prepend)+strlen(input), append);
     
-
+    return modified_string;
 
 }
 
@@ -55,16 +58,11 @@ unsigned char * collect_input() {
     memcpy(buffer, initial_buffer, i);
 
     free(initial_buffer);
-    return buffer;
+    unsigned char *final_str = prepend_append(buffer);
+    free(buffer);
+
+    return final_str;
 }
-
-
-
-
-
-
-
-
 
 
 unsigned char * pkcs_validate(unsigned char* padded_str, bool* valid) {
