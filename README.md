@@ -48,10 +48,10 @@ Write a program that encrpyts input under a consistent but unknown key ( generat
 ##### [x] Challenge 13 -> ECB cut-and-paste
 Write a k=v parsing routine, to parse the string into profile values. Allow your profile to accept profile value inputs, and output the corresponding cipher text as it is parsed. Using only your oracle function and the ciphertext output, craft a ciphertext that will decode to a modified profile with elevated privileges.
 
-##### [ ] Challenge 14 -> Byte-at-a-time ECB decryption (Hard)
+##### [x] Challenge 14 -> Byte-at-a-time ECB decryption (Hard)
 Similar to challenge 12, again use a known plaintext attack to decrypt an unknown message appended to some given plaintext. In this challenge though, modify your function to also prepend a random count of bytes to the given input.
 
-##### [ ] Challenge 15 -> PKCS#7 padding validation
+##### [x] Challenge 15 -> PKCS#7 padding validation
 Write a function that takes plaintext, and determine if it has valid PKCS#7 padding, and strips the padding off. 
 
 ##### [ ] Challenge 16 -> CBC bitflipping attacks
