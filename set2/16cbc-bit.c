@@ -47,7 +47,7 @@ unsigned char * cbc_encrypt_string(unsigned char *in, unsigned char *key) {
         for (x=0; x < 16; x++) {
             in_buf ^= iv[x];
         }
-
+        
 
 
 

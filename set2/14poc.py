@@ -74,6 +74,7 @@ static_blocks = []
 z = 0
 entry_block_val_last = None
 for y in range(0,100):
+    pdb.set_trace()
     time.sleep(.25)
     z += 1
     prog.sendline(str_in)

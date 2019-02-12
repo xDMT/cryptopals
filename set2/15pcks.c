@@ -50,6 +50,11 @@ unsigned char * pkcs_validate(unsigned char* padded_str, bool* valid) {
         *valid = true;
         return new_str;
     }
+    else if (pad_val > 0xF) {
+        *valid - true;
+        return padded_str;
+    }
+
     pad_pos = len - pad_val;
     for (i=pad_pos; i < len; ++i) {
 
