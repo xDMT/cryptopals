@@ -45,7 +45,7 @@ unsigned char * pkcs_validate(unsigned char* padded_str, bool* valid) {
 
 
     memcpy(new_str, padded_str, len);
-    if (pad_val == 0x1) {
+    if ((pad_val == 0x1) && (padded_str[len-2] != 0x1)) {
         new_str[len-1] = '\0';
         *valid = true;
         return new_str;
