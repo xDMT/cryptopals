@@ -1,6 +1,8 @@
 # cryptopals
 This repo consists of my solutions to the Cryptopals challenges (https://cryptopals.com)
 
+Challenge write-ups/walkthroughs can be found at https://blog.xdmtk.org
+
 ### Set 1 - Basics
 ---
 
